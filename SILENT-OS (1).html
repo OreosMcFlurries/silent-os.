@@ -1,0 +1,1391 @@
+﻿<!doctype html>
+<html data-theme="dark" style="--accent: #3b6bff; --on-accent: #fff;"><head><meta charset="utf8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body style="overflow: hidden;">
+<title>SILENT OS Sign In</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@600;800&amp;family=DM+Sans:wght@400;500;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap">
+<style>
+  /* Layout: big outlined "Sign in." heading, form on the left, sticky live preview of the desktop on the right (stacked on phones) */
+  [hidden] { display: none !important; }
+  :root {
+    --bg: #000;              /* black ground */
+    --fill: #000;            /* heading fill (matches ground) */
+    --ink: #fff;             /* white text, outlines, borders */
+    --muted: #a3a3a3;
+    --field: #0d0d0d;
+    --danger: #ff6b6b;
+    --accent: #3b6bff;       /* replaced live by the accent picker */
+    --on-accent: #fff;
+    --font-display: "Unbounded", "Arial Black", system-ui, sans-serif;
+    --font-body: "DM Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+    color-scheme: dark;
+  }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) {
+      --bg: #fff; --fill: #fff; --ink: #000; --muted: #5c5c5c; --field: #f3f3f3; --danger: #c4161c;
+      color-scheme: light;
+    }
+  }
+  :root[data-theme="light"] {
+    --bg: #fff; --fill: #fff; --ink: #000; --muted: #5c5c5c; --field: #f3f3f3; --danger: #c4161c;
+    color-scheme: light;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 1rem;
+    line-height: 1.5;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-block: 32px 56px;
+  }
+  .page { width: 100%; max-width: 1040px; margin: 0 auto; min-width: 0; display: grid; gap: 36px; }
+
+  .eyebrow {
+    margin: 0 0 14px;
+    font-family: var(--font-mono); font-size: 0.74rem; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--muted);
+  }
+  h1 {
+    margin: 0;
+    font-family: var(--font-display); font-weight: 800;
+    font-size: clamp(2.8rem, 11vw, 5.5rem);
+    line-height: 1; letter-spacing: -0.03em;
+    color: var(--fill);
+    -webkit-text-stroke: 4px var(--ink);
+    paint-order: stroke fill;
+  }
+  .lede { margin: 14px 0 0; color: var(--muted); max-width: 46ch; }
+
+  .layout { display: grid; gap: 32px; grid-template-columns: minmax(0, 1fr); }
+  .preview { order: -1; min-width: 0; }
+  @media (min-width: 880px) {
+    .layout { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 48px; align-items: start; }
+    .preview { order: 0; position: sticky; top: calc(24px + env(safe-area-inset-top, 0px)); }
+  }
+
+  form, .done { display: grid; gap: 30px; min-width: 0; }
+  fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
+  legend {
+    padding: 0; margin-bottom: 10px;
+    font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--muted);
+  }
+  .sr { position: absolute; opacity: 0; pointer-events: none; width: 1px; height: 1px; }
+
+  /* text fields */
+  .field { display: grid; gap: 6px; min-width: 0; }
+  .field > label { font-weight: 500; font-size: 0.92rem; }
+  .field input[type="text"], .field input[type="email"], .field input[type="tel"] {
+    width: 100%; font: inherit; font-size: 1rem; color: var(--ink); background: var(--field);
+    border: 2px solid var(--ink); border-radius: 4px; padding: 12px 14px;
+  }
+  .field input::placeholder { color: var(--muted); }
+  .hint { margin: 0; font-size: 0.82rem; color: var(--muted); }
+  .error { margin: 0; min-height: 0; font-size: 0.84rem; color: var(--danger); }
+  .error:empty { display: none; }
+  .row2 { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+
+  :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+  /* appearance */
+  .seg { display: inline-grid; grid-auto-flow: column; border: 2px solid var(--ink); border-radius: 4px; overflow: hidden; }
+  .seg label { display: block; cursor: pointer; }
+  .seg span { display: block; padding: 10px 26px; font-weight: 500; }
+  .seg input:checked + span { background: var(--ink); color: var(--bg); }
+  .seg input:focus-visible + span { outline: 3px solid var(--accent); outline-offset: -5px; }
+
+  /* wallpapers */
+  .wps { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); }
+  .wps label { display: grid; gap: 6px; cursor: pointer; min-width: 0; }
+  .wps .wp { aspect-ratio: 16 / 10; border-radius: 4px; border: 2px solid var(--ink); max-width: 100%; }
+  .wps input:checked + .wp { outline: 3px solid var(--accent); outline-offset: 2px; }
+  .wps input:focus-visible + .wp { outline: 3px solid var(--accent); outline-offset: 2px; }
+  .wps .name { font-family: var(--font-mono); font-size: 0.74rem; letter-spacing: 0.04em; }
+  .wps input:checked ~ .name { font-weight: 500; }
+
+  .wp[data-wp="static"]  { background: repeating-linear-gradient(45deg, #111 0 6px, #222 6px 12px); }
+  .wp[data-wp="orbit"]   { background: repeating-radial-gradient(circle at 72% 30%, #0e0e0e 0 12px, #262626 12px 14px); }
+  .wp[data-wp="slate"]   { background: linear-gradient(145deg, #111 0%, #555 48%, #222 100%); }
+  .wp[data-wp="grid"]    { background-color: #111; background-image: linear-gradient(#777 1px, transparent 1px), linear-gradient(90deg, #777 1px, transparent 1px); background-size: 24px 24px; }
+
+  /* accent colors */
+  .accents { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+  .accents label { cursor: pointer; display: block; }
+  .dot { display: block; width: 36px; height: 36px; border-radius: 50%; background: var(--c); border: 2px solid var(--ink); }
+  .accents input:checked + .dot { box-shadow: 0 0 0 3px var(--bg), 0 0 0 5px var(--ink); }
+  .accents input:focus-visible + .dot { outline: 3px solid var(--accent); outline-offset: 4px; }
+  .custom { display: inline-flex; align-items: center; gap: 8px; font-size: 0.86rem; color: var(--muted); }
+  .custom input[type="color"] {
+    width: 36px; height: 36px; padding: 0; border: 2px solid var(--ink); border-radius: 50%; background: none; cursor: pointer;
+    overflow: hidden;
+  }
+  .custom input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+  .custom input[type="color"]::-webkit-color-swatch { border: 0; border-radius: 50%; }
+  .custom input[type="color"]::-moz-color-swatch { border: 0; border-radius: 50%; }
+
+  /* buttons */
+  .btn {
+    font-family: var(--font-display); font-weight: 600; font-size: 0.95rem; letter-spacing: -0.01em;
+    background: var(--accent); color: var(--on-accent);
+    border: 2px solid var(--ink); border-radius: 4px; padding: 14px 30px; cursor: pointer; width: fit-content;
+  }
+  .btn:hover { filter: brightness(1.08); }
+  .btn.ghost { background: transparent; color: var(--ink); }
+  .actions { display: flex; flex-wrap: wrap; gap: 12px; }
+
+  /* preview */
+  .screen {
+    aspect-ratio: 4 / 3; max-width: 100%; border: 2px solid var(--ink); border-radius: 6px;
+    display: grid; place-items: center; padding: 16px; overflow: hidden;
+  }
+  .win {
+    width: min(86%, 320px); background: var(--bg); color: var(--ink);
+    border: 2px solid var(--ink); border-radius: 6px; padding: 14px; display: grid; gap: 12px; min-width: 0;
+  }
+  .win-bar {
+    display: flex; justify-content: space-between; align-items: center; gap: 8px;
+    border-bottom: 1px solid var(--ink); padding-bottom: 8px;
+    font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.12em; text-transform: uppercase;
+  }
+  .mini-beta { border: 1px solid var(--ink); border-radius: 999px; padding: 0 7px; font-size: 0.6rem; }
+  .win-hello { margin: 0; font-weight: 500; overflow-wrap: anywhere; }
+  .win-btn {
+    background: var(--accent); color: var(--on-accent); border-radius: 4px; padding: 6px 14px;
+    font-family: var(--font-mono); font-size: 0.74rem; letter-spacing: 0.06em; text-transform: uppercase; width: fit-content;
+  }
+  .caption { margin: 10px 0 0; font-size: 0.82rem; color: var(--muted); }
+
+  /* done state */
+  .done h2 {
+    margin: 0; font-family: var(--font-display); font-weight: 800; font-size: clamp(1.6rem, 6vw, 2.4rem);
+    letter-spacing: -0.02em; overflow-wrap: anywhere;
+  }
+  .done h2:focus { outline: none; }
+  .summary { margin: 0; display: grid; gap: 0; border-top: 2px solid var(--ink); }
+  .summary div { display: flex; justify-content: space-between; gap: 16px; padding: 12px 0; border-bottom: 1px solid var(--ink); }
+  .summary dt { font-family: var(--font-mono); font-size: 0.74rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); padding-top: 2px; }
+  .summary dd { margin: 0; text-align: right; overflow-wrap: anywhere; min-width: 0; }
+  .note { margin: 0; font-size: 0.84rem; color: var(--muted); }
+
+  /* OS shell: boot screen, then desktop */
+  .os { position: fixed; inset: 0; z-index: 50; background: var(--bg); color: var(--ink); }
+  .boot {
+    height: 100%; display: grid; place-items: center;
+    padding: max(24px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) max(24px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
+  }
+  .boot-inner { width: min(420px, 100%); display: grid; gap: 20px; min-width: 0; }
+  .boot-title {
+    font-family: var(--font-display); font-weight: 800; font-size: clamp(2.6rem, 13vw, 4.6rem);
+    line-height: 1; letter-spacing: -0.03em; color: var(--fill);
+    -webkit-text-stroke: 4px var(--ink); paint-order: stroke fill;
+  }
+  .bar { height: 16px; border: 2px solid var(--ink); border-radius: 4px; overflow: hidden; background: var(--field); }
+  .bar i { display: block; height: 100%; background: var(--accent); transform-origin: left center; transform: scaleX(0); }
+  .boot-meta {
+    display: flex; justify-content: space-between; gap: 16px;
+    font-family: var(--font-mono); font-size: 0.78rem; letter-spacing: 0.04em;
+  }
+  .boot-meta span:first-child { min-width: 0; overflow-wrap: anywhere; }
+  .boot-meta span:last-child { font-variant-numeric: tabular-nums; }
+
+  .desktop { position: relative; height: 100%; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; }
+  .menubar {
+    display: flex; justify-content: space-between; align-items: center; gap: 12px;
+    background: var(--bg); border-bottom: 2px solid var(--ink);
+    padding: calc(8px + env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) 8px max(16px, env(safe-area-inset-left, 0px));
+    font-family: var(--font-mono); font-size: 0.76rem; letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  .menubar .mb-left, .menubar .mb-right { display: inline-flex; align-items: center; gap: 12px; min-width: 0; }
+  .menubar #menu-user { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 28vw; }
+  .menubar #menu-time { font-variant-numeric: tabular-nums; }  .desk {
+    position: relative; display: grid; grid-template: minmax(0, 1fr) / minmax(0, 1fr); place-items: center; min-height: 0; overflow: hidden;
+    padding: 16px max(16px, env(safe-area-inset-right, 0px)) 16px max(16px, env(safe-area-inset-left, 0px));
+  }
+  .desk-brand {
+    position: absolute; inset: 0; display: grid; place-content: center; justify-items: center;
+    color: #fff; text-align: center; pointer-events: none; user-select: none;
+    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.55);
+  }
+  .desk-brand strong {
+    font-family: "Arial Black", system-ui, sans-serif; font-size: clamp(2.4rem, 9vw, 5rem);
+    font-weight: 800; line-height: 1; letter-spacing: 0;
+    color: transparent; -webkit-text-stroke: 2px #fff; transform: scaleX(1.08);
+  }
+  .desk-brand span { margin-top: 10px; font-size: 0.88rem; letter-spacing: 0.08em; }
+  .os-win {
+    width: min(100%, 460px); max-height: 100%; display: flex; flex-direction: column;
+    background: var(--bg); border: 2px solid var(--ink); border-radius: 6px; will-change: transform;
+  }
+  .os-win-bar {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 6px 8px 6px 14px; border-bottom: 2px solid var(--ink);
+    font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.12em; text-transform: uppercase;
+    cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none;
+  }
+  .os-win.dragging .os-win-bar { cursor: grabbing; }
+  .win-ctl { display: inline-flex; gap: 6px; }
+  .win-ctl button {
+    width: 30px; height: 26px; display: grid; place-items: center; padding: 0;
+    background: var(--field); color: var(--ink); border: 2px solid var(--ink); border-radius: 4px; cursor: pointer;
+  }
+  .win-ctl button:hover { background: var(--accent); color: var(--on-accent); }
+  .desk > .os-win { grid-area: 1 / 1; }
+  .os-win.browser { width: min(100%, 760px); height: min(100%, 480px); }
+  .os-win.settings { width: min(100%, 520px); }
+  .os-win.games { width: min(100%, 900px); height: min(100%, 640px); }
+  .os-win.silentflix { width: min(100%, 900px); height: min(100%, 680px); }
+  .os-win.watch { width: min(100%, 1000px); height: min(100%, 700px); }
+  .watch-body { display: flex; flex: 1; min-height: 0; flex-direction: column; padding: 0; background: #111; }
+  .watch-tools { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-bottom: 1px solid #555; color: var(--muted); font: .72rem var(--font-mono); }
+  .watch-tools a { margin-left: auto; color: var(--ink); }
+  .watch-frame { flex: 1; min-height: 0; width: 100%; border: 0; background: #111; }
+
+  .silentflix-body { display: flex; flex: 1; min-height: 0; flex-direction: column; gap: 10px; padding: 10px; overflow: hidden; }
+  .flix-tabs { display: flex; gap: 8px; border-bottom: 1px solid #555; }
+  .flix-tab { padding: 7px 14px; border: 0; border-bottom: 2px solid transparent; background: transparent; color: var(--muted); font: inherit; cursor: pointer; }
+  .flix-tab[aria-selected="true"] { border-color: var(--accent); color: var(--ink); font-weight: 700; }  .flix-tools { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .flix-tools input, .flix-tools select { min-height: 36px; border: 1px solid var(--ink); border-radius: 4px; padding: 7px 10px; background: var(--field); color: var(--ink); font: inherit; }
+  .flix-tools input { flex: 1 1 220px; min-width: 140px; }
+  .flix-tools select { flex: 0 1 180px; }
+  .flix-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(210px, 270px); gap: 14px; flex: 1; min-height: 0; }
+  .flix-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); align-content: start; gap: 12px; min-height: 0; overflow: auto; padding: 2px 4px 8px 2px; }
+  .flix-card { min-width: 0; padding: 0; overflow: hidden; border: 1px solid #555; border-radius: 5px; background: var(--field); color: var(--ink); text-align: left; cursor: pointer; }
+  .flix-card:hover, .flix-card[aria-pressed="true"] { border-color: var(--accent); outline: 2px solid var(--accent); }
+  .flix-card img, .flix-poster-placeholder { display: block; width: 100%; aspect-ratio: 2 / 3; object-fit: cover; background: linear-gradient(145deg,#222,#090909); }
+  .flix-card-copy { display: grid; gap: 4px; padding: 8px; }
+  .flix-card-title { font-size: .82rem; font-weight: 700; line-height: 1.3; }
+  .flix-card-meta { color: var(--muted); font: .68rem var(--font-mono); }
+  .flix-detail { min-width: 0; overflow: auto; padding: 4px; }
+  .flix-detail img { display: block; width: 100%; max-height: 280px; object-fit: cover; border-radius: 4px; background: #222; }
+  .flix-detail h3 { margin: 10px 0 4px; font: 700 1rem var(--font-display); }
+  .flix-detail p { color: var(--muted); font-size: .82rem; }
+  .flix-watch { display: inline-block; margin: 4px 0 12px; padding: 8px 12px; border-radius: 4px; background: var(--accent); color: var(--on-accent); font-weight: 700; text-decoration: none; }
+  .flix-pagination { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 34px; color: var(--muted); font: .7rem var(--font-mono); }
+  .flix-note { margin: 0; color: var(--muted); font: .68rem var(--font-mono); }
+  @media (max-width: 640px) { .flix-layout { grid-template-columns: minmax(0,1fr); grid-template-rows: minmax(180px, 1fr) auto; } .flix-detail { max-height: 210px; border-top: 1px solid #555; } .flix-detail img { display: none; } }  .os-win-body.games-body { display: flex; flex: 1; min-height: 0; padding: 0; overflow: hidden; }
+  .games-catalog { display: flex; flex: 1; min-height: 0; flex-direction: column; gap: 14px; padding: 16px; overflow: hidden; background: #111; color: #eee; }
+  .games-catalog-head { display: flex; align-items: center; gap: 12px; }
+  .games-catalog-head h2 { margin: 0; font-size: 1.25rem; }
+  .games-count { color: #aaa; font: 0.72rem var(--font-mono); }
+  .games-search {
+    width: 100%; min-height: 38px; padding: 8px 10px; color: #eee; background: #1b1b1b;
+    border: 1px solid #666; border-radius: 4px; font: inherit;
+  }
+  .games-search:focus { outline: 2px solid #aaa; outline-offset: 1px; }
+  .games-grid { display: grid; flex: 1; min-height: 0; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); grid-auto-rows: max-content; align-content: start; gap: 12px; overflow: auto; overflow-anchor: none; }
+  .game-card { display: block; overflow: hidden; padding: 0; color: #eee; background: #202020; border: 1px solid #555; border-radius: 5px; cursor: pointer; text-align: left; }
+  .game-card:hover, .game-card:focus-visible { background: #333; border-color: #bbb; outline: none; }
+  .game-card img { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; background: #333; }
+  .game-card span { display: block; padding: 8px 9px; font-size: 0.82rem; }
+  .games-frame-view { display: flex; flex: 1; min-height: 0; flex-direction: column; background: #111; }
+  .games-catalog[hidden], .games-frame-view[hidden] { display: none; }
+  .games-frame-tools { display: flex; align-items: center; gap: 12px; padding: 8px; color: #eee; background: #1b1b1b; border-bottom: 1px solid #555; }
+  .games-provider-hint { padding: 5px 10px; color: #bbb; background: #222; border-bottom: 1px solid #555; font-size: 0.72rem; }
+  .games-back { padding: 6px 10px; color: #eee; background: #292929; border: 1px solid #777; border-radius: 4px; cursor: pointer; }
+  .games-back:hover { background: #444; }
+  .games-selected-title { overflow: hidden; font-size: 0.85rem; text-overflow: ellipsis; white-space: nowrap; }
+  .games-frame { flex: 1; min-height: 0; width: 100%; border: 0; background: #000; }
+  .settings-grid { display: grid; gap: 16px; }
+  .settings-grid label { display: grid; gap: 6px; font-weight: 500; }
+  .settings-grid select, .settings-grid input[type="color"] {
+    font: inherit; color: var(--ink); background: var(--field); border: 2px solid var(--ink); border-radius: 4px;
+  }
+  .settings-grid select { min-height: 44px; padding: 8px 10px; }
+  .settings-grid input[type="color"] { width: 52px; height: 40px; padding: 3px; cursor: pointer; }
+  .browser-message { flex: 1; min-height: 0; display: grid; place-items: center; padding: 20px; font-family: var(--font-mono); font-size: clamp(1rem, 3vw, 1.4rem); text-align: center; }
+  a.btn { display: inline-block; text-decoration: none; }
+  .win-ctl .i-res { display: none; }
+  .os-win.max .win-ctl .i-res { display: block; }
+  .os-win.max .win-ctl .i-max { display: none; }
+  /* maximize fills the desktop area inside the page, it does not use browser fullscreen */
+  .desktop.has-max .desk { padding: 0; }
+  .os-win.max { width: 100%; max-width: none; height: 100%; max-height: none; border-radius: 0; border-width: 0 0 2px; transform: none !important; }
+  .os-win.max .os-win-bar { cursor: default; }
+  .os-win-body { padding: 20px; display: grid; gap: 16px; min-width: 0; min-height: 0; overflow: auto; }
+  .os-win h2 {
+    margin: 0; font-family: var(--font-display); font-weight: 800; font-size: clamp(1.3rem, 5vw, 1.8rem);
+    letter-spacing: -0.02em; overflow-wrap: anywhere;
+  }
+  .os-win h2:focus { outline: none; }
+  .dock-wrap {
+    display: flex; justify-content: center;
+    padding: 0 max(16px, env(safe-area-inset-right, 0px)) max(14px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
+  }
+  .dock { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 12px; background: var(--bg); border: 2px solid var(--ink); border-radius: 10px; padding: 8px 12px 12px; max-width: 100%; }
+  .tile[data-win="open"]::after, .tile[data-win="min"]::after {
+    content: ""; position: absolute; left: 50%; bottom: -9px; width: 24px; height: 3px; margin-left: -12px;
+    border-radius: 2px; background: var(--ink);
+  }
+  .tile[data-win="min"]::after {
+    background: repeating-linear-gradient(90deg, var(--ink) 0 5px, transparent 5px 8px);
+  }
+  .tile { position: relative; display: grid; gap: 4px; justify-items: center; background: none; border: 0; padding: 0; color: var(--ink); font: inherit; cursor: pointer; }
+  .tile b {
+    width: 48px; height: 48px; display: grid; place-items: center;
+    border: 2px solid var(--ink); border-radius: 8px; background: var(--field);
+    font-family: var(--font-display); font-weight: 800;
+  }
+  .tile span { font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.06em; text-transform: uppercase; }
+  .tile:hover b { background: var(--accent); color: var(--on-accent); }
+  .toast {
+    position: absolute; left: 50%; transform: translateX(-50%); bottom: calc(104px + env(safe-area-inset-bottom, 0px));
+    background: var(--ink); color: var(--bg); padding: 8px 14px; border-radius: 4px; font-size: 0.86rem; max-width: calc(100% - 32px);
+  }
+</style>
+
+<div class="page" hidden="">
+  <header>
+    <p class="eyebrow">SILENT OS · Beta · version 0.2</p>
+    <h1>Sign in.</h1>
+    <p class="lede">Pick a username and set up how your desktop looks. Add someone we can reach in an emergency.</p>
+  </header>
+
+  <div class="layout">
+    <div>
+      <form id="form" novalidate="">
+        <div class="field">
+          <label for="username">Username</label>
+          <input type="text" id="username" name="username" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="20" placeholder="cookie.monster">
+          <p class="hint">3 to 20 characters. Letters, numbers, dots, dashes and underscores.</p>
+          <p class="error" id="username-error" role="alert"></p>
+        </div>
+
+        <fieldset>
+          <legend>Appearance</legend>
+          <div class="seg" role="radiogroup" aria-label="Appearance">
+            <label><input class="sr" type="radio" name="mode" id="mode-dark" value="dark" checked=""><span>Dark mode</span></label>
+            <label><input class="sr" type="radio" name="mode" id="mode-light" value="light"><span>Light mode</span></label>
+          </div>
+          <p class="hint" style="margin-top:8px">Can be changed later.</p>
+        </fieldset>
+
+        <fieldset>
+          <legend>Wallpaper</legend>
+          <div class="wps">
+            <label><input class="sr" type="radio" name="wallpaper" id="wp-static" value="static" checked=""><span class="wp" data-wp="static"></span><span class="name">Static</span></label>
+            <label><input class="sr" type="radio" name="wallpaper" id="wp-orbit" value="orbit"><span class="wp" data-wp="orbit"></span><span class="name">Orbit</span></label>
+            <label><input class="sr" type="radio" name="wallpaper" id="wp-slate" value="slate"><span class="wp" data-wp="slate"></span><span class="name">Slate</span></label>
+            <label><input class="sr" type="radio" name="wallpaper" id="wp-grid" value="grid"><span class="wp" data-wp="grid"></span><span class="name">Grid</span></label>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Accent color</legend>
+          <div class="accents">
+            <label title="Blue"><input class="sr" type="radio" name="accent" id="ac-blue" value="#3b6bff" checked=""><span class="dot" style="--c:#3b6bff"></span></label>
+            <label title="Red"><input class="sr" type="radio" name="accent" id="ac-red" value="#ff4d4d"><span class="dot" style="--c:#ff4d4d"></span></label>
+            <label title="Green"><input class="sr" type="radio" name="accent" id="ac-green" value="#2fd07a"><span class="dot" style="--c:#2fd07a"></span></label>
+            <label title="Orange"><input class="sr" type="radio" name="accent" id="ac-orange" value="#ff9a2e"><span class="dot" style="--c:#ff9a2e"></span></label>
+            <label title="Pink"><input class="sr" type="radio" name="accent" id="ac-pink" value="#ff5ca8"><span class="dot" style="--c:#ff5ca8"></span></label>
+            <label title="Yellow"><input class="sr" type="radio" name="accent" id="ac-yellow" value="#ffd23f"><span class="dot" style="--c:#ffd23f"></span></label>
+            <label class="custom" for="accent-custom"><input type="color" id="accent-custom" value="#3b6bff" aria-label="Custom accent color">Custom</label>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Emergency contact (optional)</legend>
+          <div class="row2">
+            <div class="field">
+              <label for="em-email">Email</label>
+              <input type="email" id="em-email" name="emergency-email" autocomplete="off" placeholder="mom@example.com">
+            </div>
+            <div class="field">
+              <label for="em-phone">Phone number</label>
+              <input type="tel" id="em-phone" name="emergency-phone" autocomplete="off" placeholder="(555) 123-4567">
+            </div>
+          </div>
+          <p class="hint" style="margin-top:8px">Optional. Add an email, a number, or both.</p>
+          <p class="error" id="em-error" role="alert"></p>
+        </fieldset>
+
+        <button class="btn" type="submit" id="submit">Continue</button>
+      </form>
+
+      <section class="done" id="done" hidden="" aria-live="polite">
+        <h2 id="done-title" tabindex="-1">All set.</h2>
+        <dl class="summary">
+          <div><dt>Username</dt><dd id="s-user"></dd></div>
+          <div><dt>Appearance</dt><dd id="s-mode">Dark mode</dd></div>
+          <div><dt>Wallpaper</dt><dd id="s-wp">Static</dd></div>
+          <div><dt>Accent</dt><dd id="s-accent">Blue #3B6BFF</dd></div>
+          <div><dt>Emergency</dt><dd id="s-em"></dd></div>
+        </dl>
+        <p class="note" id="done-note">This page only previews your setup. Nothing is stored or sent anywhere.</p>
+        <div class="actions">
+          <button class="btn" type="button" id="signin">Sign in</button>
+          <button class="btn ghost" type="button" id="edit">Edit details</button>
+        </div>
+      </section>
+    </div>
+
+    <aside class="preview" aria-label="Live preview">
+      <div class="screen wp" id="screen" data-wp="static">
+        <div class="win">
+          <div class="win-bar"><span>SILENT OS</span><span class="mini-beta">Beta</span></div>
+          <p class="win-hello" id="hello">welcome back, you.</p>
+          <span class="win-btn">Open</span>
+        </div>
+      </div>
+      <p class="caption">Preview updates as you choose.</p>
+    </aside>
+  </div>
+</div>
+
+<div class="os" id="os">
+  <section class="boot" id="boot" aria-label="Loading SILENT OS" hidden="">
+    <div class="boot-inner">
+      <div class="boot-title">SILENT OS</div>      <div class="bar" id="bar" role="progressbar" aria-label="Loading SILENT OS" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100"><i id="bar-fill" style="transform: scaleX(1);"></i></div>
+      <div class="boot-meta"><span id="boot-label" aria-live="polite">Ready</span><span id="boot-pct">100%</span></div>
+    </div>
+  </section>
+
+  <section class="desktop wp" id="desktop" data-wp="static" aria-label="SILENT OS desktop">
+    <header class="menubar">
+      <span class="mb-left">SILENT OS <span class="mini-beta">Beta</span></span>
+      <span class="mb-right"><span id="menu-user">guest</span><span id="menu-time">9:11 PM</span></span>
+    </header>
+    <div class="desk">
+      <div class="desk-brand" aria-label="SILENT OS — enjoy your while.">
+        <strong>SILENT OS</strong>
+        <span>enjoy your while.</span>
+      </div>
+      <div class="os-win settings" id="win-settings" style="transform: translate(42px, 24px); z-index: 15;">
+        <div class="os-win-bar" tabindex="0" title="Drag to move. Arrow keys also work.">
+          <span class="os-win-title">Settings</span>
+          <span class="win-ctl">
+            <button type="button" class="win-min" aria-label="Minimize window" title="Minimize"><svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M2 9h8" stroke="currentColor" stroke-width="2" fill="none"></path></svg></button>
+            <button type="button" class="win-max" aria-label="Maximize window" title="Maximize"><svg class="i-max" viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><rect x="2" y="2" width="8" height="8" stroke="currentColor" stroke-width="2" fill="none"></rect></svg><svg class="i-res" viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M4 4V1.5h6.5V8H8M1.5 4H8v6.5H1.5z" stroke="currentColor" stroke-width="1.6" fill="none"></path></svg></button>
+            <button type="button" class="win-close" aria-label="Close window" title="Close"><svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M2 2l8 8M10 2L2 10" stroke="currentColor" stroke-width="2" fill="none"></path></svg></button>
+          </span>
+        </div>
+        <div class="os-win-body">
+          <h2 tabindex="-1">Personalize your desktop</h2>
+          <div class="settings-grid">
+            <label for="settings-mode">Appearance
+              <select id="settings-mode">
+                <option value="dark">Dark mode</option>
+                <option value="light">Light mode</option>
+              </select>
+            </label>
+            <label for="settings-wallpaper">Wallpaper
+              <select id="settings-wallpaper">
+                <option value="static">Static</option>
+                <option value="orbit">Orbit</option>
+                <option value="slate">Slate</option>
+                <option value="grid">Grid</option>
+              </select>
+            </label>
+            <label for="settings-accent">Accent color
+              <input type="color" id="settings-accent" value="#3b6bff">
+            </label>
+          </div>
+          <p class="note">Changes apply to your desktop immediately.</p>
+          <button class="btn ghost" type="button" id="download-html">Download as HTML</button>
+        </div>
+      </div>
+
+      <div class="os-win browser" id="win-browser" hidden="" style="transform: translate(28px, 22px);">
+        <div class="os-win-bar" tabindex="0" title="Drag to move. Arrow keys also work.">
+          <span class="os-win-title">Browser</span>
+          <span class="win-ctl">
+            <button type="button" class="win-min" aria-label="Minimize window" title="Minimize"><svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M2 9h8" stroke="currentColor" stroke-width="2" fill="none"></path></svg></button>
+            <button type="button" class="win-max" aria-label="Maximize window" title="Maximize"><svg class="i-max" viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><rect x="2" y="2" width="8" height="8" stroke="currentColor" stroke-width="2" fill="none"></rect></svg><svg class="i-res" viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M4 4V1.5h6.5V8H8M1.5 4H8v6.5H1.5z" stroke="currentColor" stroke-width="1.6" fill="none"></path></svg></button>
+            <button type="button" class="win-close" aria-label="Close window" title="Close"><svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M2 2l8 8M10 2L2 10" stroke="currentColor" stroke-width="2" fill="none"></path></svg></button>
+          </span>
+        </div>
+        <div class="browser-message">browser under construction!</div>
+      </div>
+
+      <div class="os-win silentflix" id="win-silentflix" hidden="">
+        <div class="os-win-bar" tabindex="0" title="Drag to move. Arrow keys also work.">
+          <span class="os-win-title">SilentFlix</span>
+          <span class="win-ctl">
+            <button type="button" class="win-min" aria-label="Minimize window" title="Minimize"><svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M2 9h8" stroke="currentColor" stroke-width="2" fill="none"></path></svg></button>
+            <button type="button" class="win-max" aria-label="Maximize window" title="Maximize"><svg class="i-max" viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><rect x="2" y="2" width="8" height="8" stroke="currentColor" stroke-width="2" fill="none"></rect></svg><svg class="i-res" viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M4 4V1.5h6.5V8H8M1.5 4H8v6.5H1.5z" stroke="currentColor" stroke-width="1.6" fill="none"></path></svg></button>
+            <button type="button" class="win-close" aria-label="Close window" title="Close"><svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M2 2l8 8M10 2L2 10" stroke="currentColor" stroke-width="2" fill="none"></path></svg></button>
+          </span>
+        </div>
+        <div class="os-win-body silentflix-body">
+                    <div class="flix-tabs" role="tablist" aria-label="Catalog type">
+            <button class="flix-tab" type="button" id="flix-movies-tab" role="tab" aria-selected="true">Movies</button>
+            <button class="flix-tab" type="button" id="flix-shows-tab" role="tab" aria-selected="false">Shows</button>
+          </div>
+          <div class="flix-tools">
+            <input id="flix-search" type="search" placeholder="Search movies" aria-label="Search titles">
+            <select id="flix-category" aria-label="Catalog category">
+              <option value="discover/movie">All movies</option>
+              <option value="trending/movie/week">Trending this week</option>
+              <option value="movie/popular">Popular</option>
+              <option value="movie/top_rated">Top rated</option>
+              <option value="movie/upcoming">Upcoming</option>
+            </select>
+          </div>
+          <div class="flix-layout">
+            <div class="flix-grid" id="flix-grid" aria-live="polite"></div>
+            <aside class="flix-detail" id="flix-detail" aria-live="polite"><p>Loading movies…</p></aside>
+          </div>
+          <div class="flix-pagination"><span id="flix-result-count" role="status">Ready to load the catalog.</span><button class="btn ghost" type="button" id="flix-load-more" hidden>Load more</button></div>
+          <p class="flix-note">10 starter movies are included in this file. Load more pages to browse the full TMDB catalog; watch links open the matching UrFlix title.</p>
+        </div>      </div>
+
+      <div class="os-win watch" id="win-watch" hidden="">
+        <div class="os-win-bar" tabindex="0" title="Drag to move. Arrow keys also work.">
+          <span class="os-win-title" id="watch-window-title">Now Playing</span>
+          <span class="win-ctl">
+            <button type="button" class="win-min" aria-label="Minimize window" title="Minimize"><svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M2 9h8" stroke="currentColor" stroke-width="2" fill="none"></path></svg></button>
+            <button type="button" class="win-max" aria-label="Maximize window" title="Maximize"><svg class="i-max" viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><rect x="2" y="2" width="8" height="8" stroke="currentColor" stroke-width="2" fill="none"></rect></svg><svg class="i-res" viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M4 4V1.5h6.5V8H8M1.5 4H8v6.5H1.5z" stroke="currentColor" stroke-width="1.6" fill="none"></path></svg></button>
+            <button type="button" class="win-close" aria-label="Close window" title="Close"><svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M2 2l8 8M10 2L2 10" stroke="currentColor" stroke-width="2" fill="none"></path></svg></button>
+          </span>
+        </div>
+        <div class="os-win-body watch-body">
+          <div class="watch-tools"><span id="watch-status">Choose a movie or show from SilentFlix.</span><a id="watch-open-link" href="https://urflix.fun/" target="_blank" rel="noopener noreferrer">Open on UrFlix</a></div>
+          <iframe class="watch-frame" id="watch-frame" title="UrFlix player" sandbox="allow-scripts allow-forms allow-same-origin" referrerpolicy="no-referrer" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen loading="lazy"></iframe>
+        </div>
+      </div>
+
+      <div class="os-win games" id="win-games" hidden="" style="transform: translate(52px, 28px);">
+        <div class="os-win-bar" tabindex="0" title="Drag to move. Arrow keys also work.">
+          <span class="os-win-title">Games</span>
+          <span class="win-ctl">
+            <button type="button" class="win-min" aria-label="Minimize window" title="Minimize"><svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M2 9h8" stroke="currentColor" stroke-width="2" fill="none"></path></svg></button>
+            <button type="button" class="win-max" aria-label="Maximize window" title="Maximize"><svg class="i-max" viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><rect x="2" y="2" width="8" height="8" stroke="currentColor" stroke-width="2" fill="none"></rect></svg><svg class="i-res" viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M4 4V1.5h6.5V8H8M1.5 4H8v6.5H1.5z" stroke="currentColor" stroke-width="1.6" fill="none"></path></svg></button>
+            <button type="button" class="win-close" aria-label="Close window" title="Close"><svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M2 2l8 8M10 2L2 10" stroke="currentColor" stroke-width="2" fill="none"></path></svg></button>
+          </span>
+        </div>
+        <div class="os-win-body games-body">
+          <section class="games-catalog" id="games-catalog" aria-label="Games catalog">
+            <div class="games-catalog-head"><h2>Games</h2><span class="games-count" id="games-count">190 games from Silent OS</span></div>
+            <label class="sr" for="games-search">Search games</label>
+            <input class="games-search" id="games-search" type="search" placeholder="Search games">
+            <div class="games-grid" id="games-grid"><button class="game-card" type="button"><img src="https://xylora.org/images/covers/0.webp" alt="" loading="lazy"><span>Bowmasters</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/1.webp" alt="" loading="lazy"><span>OvO</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/2.webp" alt="" loading="lazy"><span>OvO 2</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/3.webp" alt="" loading="lazy"><span>OvO 3 Dimensions</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/4.webp" alt="" loading="lazy"><span>Gladihoppers</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/5.webp" alt="" loading="lazy"><span>Ice Dodo</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/6.webp" alt="" loading="lazy"><span>Block Blast</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/thumbnails/velocity-rush.png" alt="" loading="lazy"><span>Velocity Rush</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/7.webp" alt="" loading="lazy"><span>Jetpack Joyride</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/8.webp" alt="" loading="lazy"><span>Friday Night Funkin</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/9.webp" alt="" loading="lazy"><span>Sprunki</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/10.webp" alt="" loading="lazy"><span>Temple Run 2</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/11.webp" alt="" loading="lazy"><span>Stickman Hook</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/13.webp" alt="" loading="lazy"><span>Attack Hole</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/14.webp" alt="" loading="lazy"><span>Bridge Race</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/15.webp" alt="" loading="lazy"><span>Color Water Sort 3D</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/16.webp" alt="" loading="lazy"><span>Hide N Seek</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/17.webp" alt="" loading="lazy"><span>Magic Tiles 3</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/18.webp" alt="" loading="lazy"><span>Stacky Dash</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/19.webp" alt="" loading="lazy"><span>Supreme Duelist</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/20.webp" alt="" loading="lazy"><span>Tall Man Run</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/21.webp" alt="" loading="lazy"><span>Turbo Stars</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/22.webp" alt="" loading="lazy"><span>Mob Control</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/23.webp" alt="" loading="lazy"><span>Pou</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/24.webp" alt="" loading="lazy"><span>Crossy Road</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/25.webp" alt="" loading="lazy"><span>Basket Battle</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/26.webp" alt="" loading="lazy"><span>Amaze</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/27.webp" alt="" loading="lazy"><span>Geometry Dash Lite (REMAKE)</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/28.webp" alt="" loading="lazy"><span>Basketball FRVR</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/29.webp" alt="" loading="lazy"><span>Bazooka Boy</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/30.webp" alt="" loading="lazy"><span>Bottle Jump 3D</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/31.webp" alt="" loading="lazy"><span>Color Match</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/32.webp" alt="" loading="lazy"><span>Dig Deep</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/33.webp" alt="" loading="lazy"><span>Retro Bowl</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/34.webp" alt="" loading="lazy"><span>Retro Bowl College</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/36.webp" alt="" loading="lazy"><span>Monster Tracks</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/37.webp" alt="" loading="lazy"><span>Gobble</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/38.webp" alt="" loading="lazy"><span>Five Nights at Freddy’s</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/39.webp" alt="" loading="lazy"><span>Five Nights at Freddy’s 2</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/40.webp" alt="" loading="lazy"><span>Five Nights at Freddy’s 3</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/41.webp" alt="" loading="lazy"><span>Five Nights at Freddy’s 4</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/42.webp" alt="" loading="lazy"><span>Road of Fury</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/43.webp" alt="" loading="lazy"><span>Driven Wild</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/44.webp" alt="" loading="lazy"><span>Ragdoll Hit</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/45.webp" alt="" loading="lazy"><span>Vex 1</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/46.webp" alt="" loading="lazy"><span>Vex 2</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/47.webp" alt="" loading="lazy"><span>Vex 3</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/48.webp" alt="" loading="lazy"><span>Vex 3 XMAS</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/49.webp" alt="" loading="lazy"><span>Vex 4</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/50.webp" alt="" loading="lazy"><span>Vex 5</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/51.webp" alt="" loading="lazy"><span>Vex 6</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/52.webp" alt="" loading="lazy"><span>Vex 7</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/53.webp" alt="" loading="lazy"><span>Vex 8</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/54.webp" alt="" loading="lazy"><span>Vex Challenges</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/55.webp" alt="" loading="lazy"><span>Vex X3M</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/56.webp" alt="" loading="lazy"><span>Vex X3M 2</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/58.webp" alt="" loading="lazy"><span>1v1.LoL</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/59.webp" alt="" loading="lazy"><span>A Dance of Fire and Ice</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/60.webp" alt="" loading="lazy"><span>Achievement Unlocked</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/61.webp" alt="" loading="lazy"><span>Achievement Unlocked 2</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/62.webp" alt="" loading="lazy"><span>Achievement Unlocked 3</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/63.webp" alt="" loading="lazy"><span>Angry Birds</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/64.webp" alt="" loading="lazy"><span>Backrooms</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/65.webp" alt="" loading="lazy"><span>Baldi’s Basics</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/66.webp" alt="" loading="lazy"><span>Basket Random</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/67.webp" alt="" loading="lazy"><span>Big Tower Tiny Square</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/68.webp" alt="" loading="lazy"><span>Big NEON Tower Tiny Square</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/69.webp" alt="" loading="lazy"><span>Big ICE Tower Tiny Square</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/70.webp" alt="" loading="lazy"><span>BitLife</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/71.webp" alt="" loading="lazy"><span>Bloons TD</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/72.webp" alt="" loading="lazy"><span>Bloons TD 2</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/73.webp" alt="" loading="lazy"><span>Bloons TD 3</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/74.webp" alt="" loading="lazy"><span>Bloons TD 4</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/75.webp" alt="" loading="lazy"><span>Bloons TD 5</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/76.webp" alt="" loading="lazy"><span>Bob The Robber 2</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/77.webp" alt="" loading="lazy"><span>Boxing Random</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/78.webp" alt="" loading="lazy"><span>Burrito Bison: Launcha Libre</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/79.webp" alt="" loading="lazy"><span>Cannon Basketball</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/80.webp" alt="" loading="lazy"><span>Cannon Basketball 2</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/81.webp" alt="" loading="lazy"><span>Cluster Rush</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/82.webp" alt="" loading="lazy"><span>Cookie Clicker</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/83.webp" alt="" loading="lazy"><span>Coreball</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/84.webp" alt="" loading="lazy"><span>Cubefield</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/85.webp" alt="" loading="lazy"><span>Cut the Rope</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/86.webp" alt="" loading="lazy"><span>Draw Climber</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/87.webp" alt="" loading="lazy"><span>Emulator.JS</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/88.webp" alt="" loading="lazy"><span>Fireboy and Watergirl 2</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/89.webp" alt="" loading="lazy"><span>Fireboy and Watergirl 3</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/90.webp" alt="" loading="lazy"><span>Granny</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/91.webp" alt="" loading="lazy"><span>Gunspin</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/92.webp" alt="" loading="lazy"><span>Highway Racer 2</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/93.webp" alt="" loading="lazy"><span>Johnny Trigger</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/94.webp" alt="" loading="lazy"><span>Journey Downhill</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/95.webp" alt="" loading="lazy"><span>Line Rider</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/96.webp" alt="" loading="lazy"><span>Moto X3M</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/97.webp" alt="" loading="lazy"><span>Moto X3M 2</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/98.webp" alt="" loading="lazy"><span>Moto X3M 3</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/99.webp" alt="" loading="lazy"><span>Moto X3M Spooky</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/100.webp" alt="" loading="lazy"><span>Moto X3M Winter</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/101.webp" alt="" loading="lazy"><span>Ninja vs EvilCorp</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/102.webp" alt="" loading="lazy"><span>Paper.io 2</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/103.webp" alt="" loading="lazy"><span>The World’s Hardest Game</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/104.webp" alt="" loading="lazy"><span>The World’s Hardest Game 3</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/105.webp" alt="" loading="lazy"><span>The World’s Hardest Game 4</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/106.webp" alt="" loading="lazy"><span>This Is The Only Level</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/107.webp" alt="" loading="lazy"><span>This Is The Only Level 2</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/108.webp" alt="" loading="lazy"><span>Tiny Fishing</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/109.webp" alt="" loading="lazy"><span>Tomb Of The Mask</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/110.webp" alt="" loading="lazy"><span>Toss The Turtle</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/111.webp" alt="" loading="lazy"><span>Tube Jumpers</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/112.webp" alt="" loading="lazy"><span>Wordle</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/113.webp" alt="" loading="lazy"><span>Ruffle</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/114.webp" alt="" loading="lazy"><span>2048</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/115.webp" alt="" loading="lazy"><span>8 Ball Pool</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/116.webp" alt="" loading="lazy"><span>Offroad Mountain Bike</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/117.webp" alt="" loading="lazy"><span>Space Waves</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/118.webp" alt="" loading="lazy"><span>Solar Smash</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/119.webp" alt="" loading="lazy"><span>Snow Rider 3D</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/120.webp" alt="" loading="lazy"><span>Fortzone Battle Royale</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/121.webp" alt="" loading="lazy"><span>Brawl Guys.io</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/122.webp" alt="" loading="lazy"><span>Survival Race</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/123.webp" alt="" loading="lazy"><span>Poly Track</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/124.webp" alt="" loading="lazy"><span>Moto X3M Pool Party</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/125.webp" alt="" loading="lazy"><span>Granny 2</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/126.webp" alt="" loading="lazy"><span>Granny 3</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/127.webp" alt="" loading="lazy"><span>Fashion Battle</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/128.webp" alt="" loading="lazy"><span>Slice It All</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/129.webp" alt="" loading="lazy"><span>Flappy Bird</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/130.webp" alt="" loading="lazy"><span>osu!</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/146.webp" alt="" loading="lazy"><span>8 Ball Classic</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/147.webp" alt="" loading="lazy"><span>Angry Birds Showdown</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/148.webp" alt="" loading="lazy"><span>Archery World Tour</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/149.webp" alt="" loading="lazy"><span>Ball Blast</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/150.webp" alt="" loading="lazy"><span>Cannon Balls 3D</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/151.webp" alt="" loading="lazy"><span>Chess Classic</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/152.webp" alt="" loading="lazy"><span>Draw the Line</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/153.webp" alt="" loading="lazy"><span>Flappy Dunk</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/154.webp" alt="" loading="lazy"><span>Fork n Sausage</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/155.webp" alt="" loading="lazy"><span>Guess Their Answer</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/156.webp" alt="" loading="lazy"><span>Harvest.io</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/157.webp" alt="" loading="lazy"><span>Hill Climb Racing Lite</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/158.webp" alt="" loading="lazy"><span>Pac-Man Superfast</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/159.webp" alt="" loading="lazy"><span>Parking Rush</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/160.webp" alt="" loading="lazy"><span>Race Master 3D</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/161.webp" alt="" loading="lazy"><span>State.io</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/162.webp" alt="" loading="lazy"><span>Tower Crash 3D</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/163.webp" alt="" loading="lazy"><span>Trivia Crack</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/164.webp" alt="" loading="lazy"><span>Crazy Cattle 3D</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/165.webp" alt="" loading="lazy"><span>Cheese Chompers 3D</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/166.webp" alt="" loading="lazy"><span>Bad Parenting 1</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/167.webp" alt="" loading="lazy"><span>Blade Ball</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/168.webp" alt="" loading="lazy"><span>Blocky Snakes</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/169.webp" alt="" loading="lazy"><span>Bloxorz</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/170.webp" alt="" loading="lazy"><span>Big Tower Tiny Square 2</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/171.webp" alt="" loading="lazy"><span>Candy Crush</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/172.webp" alt="" loading="lazy"><span>Melon Playground</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/173.webp" alt="" loading="lazy"><span>Drift Hunters</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/174.webp" alt="" loading="lazy"><span>World Box</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/175.webp" alt="" loading="lazy"><span>Run 1</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/176.webp" alt="" loading="lazy"><span>Run 2</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/177.webp" alt="" loading="lazy"><span>Run 3</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/178.webp" alt="" loading="lazy"><span>Swords and Souls</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/179.webp" alt="" loading="lazy"><span>Soundboard</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/180.webp" alt="" loading="lazy"><span>n-gon</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/181.webp" alt="" loading="lazy"><span>Minecraft 1.8.8</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/182.webp" alt="" loading="lazy"><span>Minecraft 1.12.2</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/183.webp" alt="" loading="lazy"><span>Minecraft 1.21.4</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/185.webp" alt="" loading="lazy"><span>Five Nights at Freddy’s: Sister Location</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/186.webp" alt="" loading="lazy"><span>Ragdoll Archers</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/187.webp" alt="" loading="lazy"><span>Papers, Please</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/188.webp" alt="" loading="lazy"><span>Scrap Metal 3</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/190.webp" alt="" loading="lazy"><span>Five Nights at Freddy’s: World</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/191.webp" alt="" loading="lazy"><span>Five Nights at Freddy’s: Pizza Simulator</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/192.webp" alt="" loading="lazy"><span>Five Nights at Freddy’s: Ultimate Custom Night</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/193.webp" alt="" loading="lazy"><span>Do NOT Take This Cat Home</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/194-m.webp" alt="" loading="lazy"><span>People Playground</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/195.webp" alt="" loading="lazy"><span>R.E.P.O</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/196.webp" alt="" loading="lazy"><span>ULTRAKILL</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/197.webp" alt="" loading="lazy"><span>Elastic Man</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/198.webp" alt="" loading="lazy"><span>Slope</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/199.webp" alt="" loading="lazy"><span>Time Shooter 1</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/200.webp" alt="" loading="lazy"><span>Time Shooter 2</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/201.webp" alt="" loading="lazy"><span>Time Shooter 3: SWAT</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/202.webp" alt="" loading="lazy"><span>Carrom Clash</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/203.webp" alt="" loading="lazy"><span>DOOM</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/204.webp" alt="" loading="lazy"><span>Five Nights at Winston’s</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/205.webp" alt="" loading="lazy"><span>Buckshot Roulette</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/206.webp" alt="" loading="lazy"><span>Tunnel Rush</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/207.webp" alt="" loading="lazy"><span>Snowbattle.io</span></button><button class="game-card" type="button"><img src="https://xylora.org/images/covers/208.webp" alt="" loading="lazy"><span>Rolly Vortex</span></button></div>
+          </section>
+          <section class="games-frame-view" id="games-frame-view" hidden="">
+            <div class="games-frame-tools">
+              <button class="games-back" type="button" id="games-back">← Games</button>
+              <span class="games-selected-title" id="games-selected-title"></span>
+            </div>
+            <div class="games-provider-hint" role="status">Xylora may show an ad before gameplay loads. Wait for it to clear, then click inside the game to play.</div>
+            <iframe class="games-frame" id="games-frame" title="Selected game" sandbox="allow-forms allow-scripts allow-same-origin allow-pointer-lock" allow="pointer-lock; fullscreen; autoplay; gamepad" allowfullscreen=""></iframe>
+          </section>
+        </div>
+      </div>
+    </div>
+    <div class="dock-wrap">
+      <nav class="dock" aria-label="Apps">
+        <button class="tile" type="button" id="tile-settings" data-win="open"><b>S</b><span>Settings</span></button>
+        <button class="tile" type="button" id="tile-browser" data-win="closed"><b>B</b><span>Browser</span></button>
+        <button class="tile" type="button" id="tile-games" data-win="closed"><b>G</b><span>Games</span></button>
+        <button class="tile" type="button" id="tile-silentflix" data-win="closed"><b>S</b><span>SilentFlix</span></button>
+        <button class="tile" type="button" id="tile-watch" data-win="closed" disabled><b>▶</b><span>Now Playing</span></button>
+      </nav>
+    </div>
+    <div class="toast" id="toast" role="status" hidden=""></div>
+  </section>
+</div>
+
+<script type="application/json" id="flix-movie-data">{"results":[{"id":1423191,"title":"Resident Evil","release_date":"2026-09-16","overview":"Medical courier Bryan unwittingly finds himself fighting for survival as one fateful, horrifying night collapses around him in chaos.","poster_path":"/gAgWJhUSQWCgtKR8170nMkYlBda.jpg","backdrop_path":"/3icyRAqgakNcQn6aDVz9libFmBA.jpg","vote_average":7.448},{"id":1263337,"title":"Heart of the Beast","release_date":"2026-09-19","overview":"After a harrowing plane crash, Special Forces officer James Belmont and his combat dog, Odin, find themselves stranded deep in the Alaskan wilderness. Together, they are forced into a brutal fight for survival against the elements.","poster_path":"/1ApfSA8JTqeha3GTFEY8syV4auq.jpg","backdrop_path":"/kpqsljPQtWqPKJBTAEtoXtQZ9Ko.jpg","vote_average":7.3},{"id":1375441,"title":"Primetime","release_date":"2026-09-23","overview":"In 2006, To Catch a Predator host Chris Hansen sets out to make television history. When a high stakes operation goes fatally wrong, his veneered dream of fame curdles into a nightmare of performative justice.","poster_path":"/lmrulvLbmaejTix1YaMxo1oGhH1.jpg","backdrop_path":"/sEsMwSDUWGIx9EfNxzM6KzVSsSQ.jpg","vote_average":6.802},{"id":1381071,"title":"Godzilla Minus Zero","release_date":"2026-11-03","overview":"War reduced Japan to zero, and Godzilla plunged it into minus. Two years have passed since then, and the country has faced agonizing struggles to achieve recovery and finally reclaim its daily life. Just as humanity managed to cling to a hard-won peace, a new threat strikes, crushing hope in an instant. There is no third time. Everything ends here.","poster_path":"/hSmIJluOJmTWvJs4d7kHRxjc8s8.jpg","backdrop_path":"/oqrYIDH4tvfEzPe1yqT4jzmAWHQ.jpg","vote_average":8.289},{"id":1294189,"title":"The Mongoose","release_date":"2026-10-29","overview":"A falsely accused war hero with nothing to lose leads police on an epic televised cross-country car chase, helped by members of his former Special Forces Army battalion and closely monitored by a fascinated public rooting for his safe getaway.","poster_path":"/eSS5mvSG84UUuvtbHel5Yu3Wik4.jpg","backdrop_path":"/iRIhPqqoUHiFBxn8oYf3gCQnaKk.jpg","vote_average":6.1},{"id":1792170,"title":"Model Citizen","release_date":"2026-11-03","overview":"With his memories gone and his past a blur, ex-cop Steven Bay seeks treatment for his amnesia while working on an isolated farm. Instead, he's met with rising hostility, strange surveillance, and instincts he can’t fully control. When the pressure becomes unbearable, Bay begins a desperate hunt for the truth behind his fractured reality.","poster_path":"/7SE0LBwgqiqZzkm9gKVbBAbcNQL.jpg","backdrop_path":"/5MBdRdiGv3AKzZDGbni88xc6JFi.jpg","vote_average":7.1},{"id":791523,"title":"Wildwood","release_date":"2026-10-19","overview":"Prue and her classmate Curtis are drawn into a magical forest filled with enchanted creatures, loyal allies, and formidable adversaries as they embark on a desperate quest to rescue Prue's abducted baby brother from a murder of crows led by a mysterious woman named Alexandra.","poster_path":"/snFM00mpNAfUzUtkdEW0uDEvXA0.jpg","backdrop_path":"/sl5NJ1vtyhP9Vr88bB4blULsJYp.jpg","vote_average":8.46},{"id":656908,"title":"Ramayana: Rise of a Legend","release_date":"2026-11-05","overview":"An ancient epic follows a young prince and princess whose marriage and subsequent exile mark the beginning of a legendary journey. Their story of love, duty and destiny sets the stage for greater challenges ahead.","poster_path":"/hz2Hv8tPToHvQ7HaxzqeLvahmcJ.jpg","backdrop_path":"/yHVZncPRZr63mezRX20IyKLrSkv.jpg","vote_average":6.6},{"id":1283515,"title":"Verity","release_date":"2026-09-30","overview":"Lowen Ashleigh, hired to ghostwrite for best-selling author Verity Crawford, uncovers Verity's autobiographical notes, and becomes involved in what may prove to be a lethal conspiracy.","poster_path":"/rmaNMA1seHqpjtnYKzyynFAr1g8.jpg","backdrop_path":"/cKetrF2dAnQ0AMV5i4BMOs41I5P.jpg","vote_average":6.971},{"id":1507696,"title":"Apocalypse Z: New World","release_date":"2026-10-09","overview":"The Canary Islands have become Europe’s last refuge following the outbreak of the TSJ virus. When a special mission sets out for the mainland in search of vital supplies, Roberto joins the team with questionable intentions. The dangerous operation turns into a desperate race for survival, and Roberto and his companions find themselves caught between hordes of infected and divided loyalties.","poster_path":"/wXln4DUrwcyjcFPwgQxFPYTlG1Z.jpg","backdrop_path":"/o3XwuDUj0n8qnK91p6q8LKfr6rj.jpg","vote_average":6.102}]}</script>
+  <script>
+(function () {
+  var root = document.documentElement;
+  var $ = function (s) { return document.querySelector(s); };
+  var form = $('#form'), done = $('#done');
+  var userEl = $('#username'), emailEl = $('#em-email'), phoneEl = $('#em-phone');
+  var customEl = $('#accent-custom');
+  var settingsMode = $('#settings-mode'), settingsWallpaper = $('#settings-wallpaper'), settingsAccent = $('#settings-accent');
+  var current = 'guest';
+  var WP_NAMES = { static: 'Static', orbit: 'Orbit', slate: 'Slate', grid: 'Grid' };
+  var AC_NAMES = { '#3b6bff': 'Blue', '#ff4d4d': 'Red', '#2fd07a': 'Green', '#ff9a2e': 'Orange', '#ff5ca8': 'Pink', '#ffd23f': 'Yellow' };
+
+  function checked(name) { var el = document.querySelector('input[name="' + name + '"]:checked'); return el ? el.value : null; }
+
+  function onAccent(hex) {
+    var n = parseInt(hex.slice(1), 16), r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+    return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255 > 0.6 ? '#000' : '#fff';
+  }
+  function setAccent(hex) {
+    root.style.setProperty('--accent', hex);
+    root.style.setProperty('--on-accent', onAccent(hex));
+  }
+  function setMode(mode) { root.setAttribute('data-theme', mode); }
+  function syncSetupSummary() {
+    var mode = checked('mode') === 'light' ? 'Light mode' : 'Dark mode';
+    var wallpaper = WP_NAMES[checked('wallpaper')] || '';
+    var accent = checked('accent') || customEl.value;
+    var accentLabel = (AC_NAMES[accent] || 'Custom') + ' ' + accent.toUpperCase();
+    $('#s-mode').textContent = mode;
+    $('#s-wp').textContent = wallpaper;
+    $('#s-accent').textContent = accentLabel;
+  }
+
+  // start in the viewer's own theme
+  var startLight = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
+  $(startLight ? '#mode-light' : '#mode-dark').checked = true;
+  setMode(startLight ? 'light' : 'dark');
+
+  document.querySelectorAll('input[name="mode"]').forEach(function (r) {
+    r.addEventListener('change', function () {
+      setMode(checked('mode'));
+      settingsMode.value = checked('mode');
+      syncSetupSummary();
+    });
+  });
+  document.querySelectorAll('input[name="wallpaper"]').forEach(function (r) {
+    r.addEventListener('change', function () {
+      $('#screen').setAttribute('data-wp', checked('wallpaper'));
+      $('#desktop').setAttribute('data-wp', checked('wallpaper'));
+      settingsWallpaper.value = checked('wallpaper');
+      syncSetupSummary();
+    });
+  });
+  document.querySelectorAll('input[name="accent"]').forEach(function (r) {
+    r.addEventListener('change', function () {
+      setAccent(r.value);
+      customEl.value = r.value;
+      settingsAccent.value = r.value;
+      syncSetupSummary();
+    });
+  });
+  customEl.addEventListener('input', function () {
+    document.querySelectorAll('input[name="accent"]').forEach(function (r) { r.checked = false; });
+    setAccent(customEl.value);
+    settingsAccent.value = customEl.value;
+    syncSetupSummary();
+  });
+  settingsMode.addEventListener('change', function () {
+    $('#mode-' + settingsMode.value).checked = true;
+    setMode(settingsMode.value);
+    syncSetupSummary();
+  });
+  settingsWallpaper.addEventListener('change', function () {
+    $('#wp-' + settingsWallpaper.value).checked = true;
+    $('#screen').setAttribute('data-wp', settingsWallpaper.value);
+    $('#desktop').setAttribute('data-wp', settingsWallpaper.value);
+    syncSetupSummary();
+  });
+  settingsAccent.addEventListener('input', function () {
+    document.querySelectorAll('input[name="accent"]').forEach(function (r) { r.checked = false; });
+    customEl.value = settingsAccent.value;
+    setAccent(settingsAccent.value);
+    syncSetupSummary();
+  });
+  $('#download-html').addEventListener('click', function () {
+    var html = '<!doctype html>\n' + document.documentElement.outerHTML;
+    var file = new Blob([html], { type: 'text/html;charset=utf-8' });
+    var url = URL.createObjectURL(file);
+    var link = document.createElement('a');
+    link.href = url;
+    link.download = 'SILENT-OS.html';
+    link.click();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  });
+
+  userEl.addEventListener('input', function () {
+    var v = userEl.value.trim();
+    $('#hello').textContent = 'welcome back, ' + (v || 'you') + '.';
+    $('#username-error').textContent = '';
+  });
+  [emailEl, phoneEl].forEach(function (el) {
+    el.addEventListener('input', function () { $('#em-error').textContent = ''; });
+  });
+
+  setAccent('#3b6bff');
+  syncSetupSummary();
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var name = userEl.value.trim(), email = emailEl.value.trim(), phone = phoneEl.value.trim();
+    var firstBad = null;
+
+    if (!/^[A-Za-z0-9._-]{3,20}$/.test(name)) {
+      $('#username-error').textContent = name
+        ? 'Use 3 to 20 letters, numbers, dots, dashes or underscores.'
+        : 'Enter a username.';
+      firstBad = userEl;
+    }
+
+    var emOk = true, emMsg = '';
+    if (email || phone) {
+      if (email && !emailEl.validity.valid) { emOk = false; emMsg = 'That email address looks incomplete.'; }
+      if (phone && (!/^[+()\d\s.-]{7,20}$/.test(phone) || phone.replace(/\D/g, '').length < 7)) {
+        emOk = false; emMsg = emMsg || 'That phone number looks incomplete.';
+      }
+    }
+    $('#em-error').textContent = emMsg;
+    if (!emOk && !firstBad) firstBad = email && !emailEl.validity.valid ? emailEl : (phone ? phoneEl : emailEl);
+
+    if (firstBad) { firstBad.focus(); return; }
+
+    var accent = checked('accent') || customEl.value;
+    current = name;
+    $('#done-title').textContent = 'All set, ' + name + '.';
+    $('#signin').hidden = false;
+    $('#done-note').textContent = 'This page only previews your setup. Nothing is stored or sent anywhere.';
+    $('#s-user').textContent = name;
+    $('#s-mode').textContent = checked('mode') === 'light' ? 'Light mode' : 'Dark mode';
+    $('#s-wp').textContent = WP_NAMES[checked('wallpaper')] || '';
+    $('#s-accent').textContent = (AC_NAMES[accent] || 'Custom') + ' ' + accent.toUpperCase();
+    $('#s-em').textContent = [email, phone].filter(Boolean).join(' / ') || 'None added';
+    form.hidden = true;
+    done.hidden = false;
+    $('#done-title').focus();
+  });
+
+  // Boot: the loading time depends on how much there is to load for this person
+  var WP_WEIGHT = { static: 3, orbit: 3, slate: 2, grid: 2 };
+  var MS_PER_UNIT = 380;
+  var clockTimer = 0, toastTimer = 0;
+
+  // Window manager. Every .os-win can be dragged by its title bar (or focus the bar and use
+  // arrow keys), minimized to its dock tile, maximized inside the desktop, and closed.
+  var wins = [], zTop = 10;
+
+  function makeWin(id, tileId, state, home) {
+    var w = {
+      el: $('#' + id), tile: $('#' + tileId), state: state, max: false, home: home,
+      pos: { x: home.x, y: home.y }, applied: { x: 0, y: 0 }, drag: null
+    };
+    w.bar = w.el.querySelector('.os-win-bar');
+    w.maxBtn = w.el.querySelector('.win-max');
+
+    w.apply = function () {
+      w.el.style.transform = 'translate(' + w.pos.x + 'px, ' + w.pos.y + 'px)';
+      w.applied.x = w.pos.x; w.applied.y = w.pos.y;
+    };
+    w.clamp = function () {
+      var d = $('#desktop').getBoundingClientRect(), m = $('.menubar').getBoundingClientRect(), r = w.el.getBoundingClientRect();
+      var baseL = r.left - w.applied.x, baseT = r.top - w.applied.y;
+      var minX = d.left + 60 - (baseL + r.width), maxX = d.right - 60 - baseL;
+      var minY = m.bottom - baseT, maxY = d.bottom - 48 - baseT;
+      w.pos.x = Math.min(Math.max(w.pos.x, minX), Math.max(minX, maxX));
+      w.pos.y = Math.min(Math.max(w.pos.y, minY), Math.max(minY, maxY));
+    };
+    w.front = function () { zTop += 1; w.el.style.zIndex = String(zTop); };
+    w.sync = function () {
+      w.el.hidden = w.state !== 'open';
+      w.el.classList.toggle('max', w.max);
+      w.maxBtn.setAttribute('aria-label', w.max ? 'Restore window' : 'Maximize window');
+      w.maxBtn.setAttribute('title', w.max ? 'Restore' : 'Maximize');
+      w.tile.setAttribute('data-win', w.state);
+      var anyMax = wins.some(function (o) { return o.max && o.state === 'open'; });
+      $('#desktop').classList.toggle('has-max', anyMax);
+    };
+    w.reset = function (st) {
+      w.state = st; w.max = false;
+      w.pos.x = w.home.x; w.pos.y = w.home.y;
+      w.apply(); w.sync();
+      if (st === 'open') w.front();
+    };
+    w.toggleMax = function () {
+      w.max = !w.max;
+      w.sync();
+      if (w.max) { w.front(); } else { w.clamp(); w.apply(); }
+    };
+
+    w.el.addEventListener('pointerdown', w.front, true);
+    w.bar.addEventListener('pointerdown', function (e) {
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
+      if (w.max || e.target.closest('.win-ctl')) return;
+      w.drag = { sx: e.clientX, sy: e.clientY, ox: w.pos.x, oy: w.pos.y };
+      w.bar.setPointerCapture(e.pointerId);
+      w.el.classList.add('dragging');
+    });
+    w.bar.addEventListener('pointermove', function (e) {
+      if (!w.drag) return;
+      w.pos.x = w.drag.ox + e.clientX - w.drag.sx;
+      w.pos.y = w.drag.oy + e.clientY - w.drag.sy;
+      w.clamp();
+      w.apply();
+    });
+    function endDrag() { w.drag = null; w.el.classList.remove('dragging'); }
+    w.bar.addEventListener('pointerup', endDrag);
+    w.bar.addEventListener('pointercancel', endDrag);
+    w.bar.addEventListener('keydown', function (e) {
+      if (e.target !== w.bar || w.max) return;
+      var step = e.shiftKey ? 48 : 16, moved = true;
+      if (e.key === 'ArrowLeft') w.pos.x -= step;
+      else if (e.key === 'ArrowRight') w.pos.x += step;
+      else if (e.key === 'ArrowUp') w.pos.y -= step;
+      else if (e.key === 'ArrowDown') w.pos.y += step;
+      else moved = false;
+      if (!moved) return;
+      e.preventDefault();
+      w.clamp();
+      w.apply();
+    });
+    w.bar.addEventListener('dblclick', function (e) {
+      if (e.target.closest('.win-ctl')) return;
+      w.toggleMax();
+    });
+    w.el.querySelector('.win-min').addEventListener('click', function () {
+      w.state = 'min'; w.sync(); w.tile.focus();
+    });
+    w.el.querySelector('.win-close').addEventListener('click', function () {
+      w.reset('closed'); w.tile.focus();
+    });
+    w.maxBtn.addEventListener('click', w.toggleMax);
+    w.tile.addEventListener('click', function () {
+      if (w.state !== 'open') { w.state = 'open'; w.sync(); }
+      w.front();
+      w.bar.focus();
+    });
+
+    wins.push(w);
+    return w;
+  }
+
+  var settingsWin = makeWin('win-settings', 'tile-settings', 'closed', { x: 42, y: 24 });
+  var browserWin = makeWin('win-browser', 'tile-browser', 'closed', { x: 28, y: 22 });
+  var gamesWin = makeWin('win-games', 'tile-games', 'closed', { x: 52, y: 28 });
+  var silentflixWin = makeWin('win-silentflix', 'tile-silentflix', 'closed', { x: 38, y: 30 });
+  var watchWin = makeWin('win-watch', 'tile-watch', 'closed', { x: 76, y: 54 });
+  var watchFrame = $('#watch-frame');
+  var watchWindowTitle = $('#watch-window-title');
+  var watchStatus = $('#watch-status');
+  var watchOpenLink = $('#watch-open-link');
+  var watchCurrentUrl = '';
+  $('#tile-watch').addEventListener('click', function () { if (watchCurrentUrl && watchFrame.src === 'about:blank') watchFrame.src = watchCurrentUrl; });
+  $('#win-watch .win-close').addEventListener('click', function () { watchFrame.src = 'about:blank'; });
+
+  var flixSearch = $('#flix-search');
+  var flixCategory = $('#flix-category');
+  var flixGrid = $('#flix-grid');
+  var flixDetail = $('#flix-detail');
+  var flixMovies = [];
+  var flixSelected = null;
+  var flixLoaded = false;
+  var flixType = 'movie';
+  var flixSearchTimer = 0;
+  var flixPage = 0;
+  var flixTotalPages = 1;
+  var flixRequestId = 0;
+  var flixIsLoading = false;
+  var flixTotalResults = 0;
+  var flixResultCount = $('#flix-result-count');
+  var flixLoadMore = $('#flix-load-more');
+  var TMDB_KEY = 'ae86208010ae1bb3179185b237918d29';
+  var flixMovieSeed = JSON.parse(document.getElementById('flix-movie-data').textContent).results;
+
+  function openFlixTitle(item) {
+    var isShow = flixType === 'tv';
+    var title = flixText(isShow ? item.name : item.title) || 'Untitled';
+    var url = 'https://urflix.fun/' + (isShow ? 'tv/' : 'movie/') + encodeURIComponent(item.id);
+    watchWindowTitle.textContent = 'Now Playing · ' + title;
+    watchStatus.textContent = (isShow ? 'Show · ' : 'Movie · ') + title;
+    watchCurrentUrl = url;
+    $('#tile-watch').disabled = false;
+    watchOpenLink.href = url;
+    watchFrame.title = title;
+    watchFrame.src = url;
+    if (watchWin.state !== 'open') { watchWin.state = 'open'; watchWin.sync(); }
+    watchWin.front();
+    watchWin.bar.focus();
+  }
+  function flixText(value) { return value == null ? '' : String(value); }
+  function flixPoster(path, size) { return path ? 'https://image.tmdb.org/t/p/' + (size || 'w342') + path : ''; }
+  function renderFlixDetail(movie) {
+    flixSelected = movie;
+    flixDetail.textContent = '';
+    if (!movie) { flixDetail.textContent = 'No titles found.'; return; }
+    if (movie.backdrop_path || movie.poster_path) {
+      var image = document.createElement('img');
+      image.src = flixPoster(movie.backdrop_path || movie.poster_path, 'w780');
+      image.alt = '';
+      flixDetail.appendChild(image);
+    }
+    var title = document.createElement('h3');
+    title.textContent = flixText(flixType === 'tv' ? movie.name : movie.title) || 'Untitled';
+    flixDetail.appendChild(title);
+    var meta = document.createElement('p');
+    var date = flixType === 'tv' ? movie.first_air_date : movie.release_date;
+    var year = date ? date.slice(0, 4) : 'Release date unknown';
+    var rating = Number(movie.vote_average) ? ' · ★ ' + Number(movie.vote_average).toFixed(1) : '';
+    meta.textContent = year + rating;
+    flixDetail.appendChild(meta);
+    var overview = document.createElement('p');
+    overview.textContent = flixText(movie.overview) || 'No summary is available.';
+    flixDetail.appendChild(overview);
+    var watch = document.createElement('a');
+    watch.className = 'flix-watch';
+    watch.href = 'https://urflix.fun/' + (flixType === 'tv' ? 'tv/' : 'movie/') + encodeURIComponent(movie.id);
+    watch.target = '_blank';
+    watch.rel = 'noopener noreferrer';
+    watch.textContent = 'Open on UrFlix';
+    flixDetail.appendChild(watch);
+  }
+  function renderFlixCards(items, append) {
+    items = items || [];
+    flixMovies = append ? flixMovies.concat(items) : items;
+    if (!append) flixGrid.textContent = '';
+    var offset = append ? flixMovies.length - items.length : 0;
+    items.forEach(function (movie, index) {
+      var card = document.createElement('button');
+      card.type = 'button';
+      card.className = 'flix-card';
+      card.setAttribute('aria-pressed', String(flixSelected && flixSelected.id === movie.id));
+      if (movie.poster_path) {
+        var image = document.createElement('img');
+        image.src = flixPoster(movie.poster_path);
+        image.alt = '';
+        image.loading = 'lazy';
+        card.appendChild(image);
+      } else {
+        var blank = document.createElement('span');
+        blank.className = 'flix-poster-placeholder';
+        card.appendChild(blank);
+      }
+      var copy = document.createElement('span');
+      copy.className = 'flix-card-copy';
+      var name = document.createElement('span');
+      name.className = 'flix-card-title';
+      name.textContent = flixText(flixType === 'tv' ? movie.name : movie.title) || 'Untitled';
+      copy.appendChild(name);
+      var info = document.createElement('span');
+      info.className = 'flix-card-meta';
+      var date = flixType === 'tv' ? movie.first_air_date : movie.release_date;
+      info.textContent = (date ? date.slice(0, 4) : '—') + (Number(movie.vote_average) ? ' · ★ ' + Number(movie.vote_average).toFixed(1) : '');
+      copy.appendChild(info);
+      card.appendChild(copy);
+      card.addEventListener('click', function () {
+        flixGrid.querySelectorAll('.flix-card').forEach(function (item) { item.setAttribute('aria-pressed', 'false'); });
+        card.setAttribute('aria-pressed', 'true');
+        renderFlixDetail(movie);
+        openFlixTitle(movie);
+      });
+      flixGrid.appendChild(card);
+      if (offset + index === 0 && !flixSelected) renderFlixDetail(movie);
+    });
+    if (!flixMovies.length) renderFlixDetail(null);
+  }
+  function updateFlixPaging() {
+    var label = flixType === 'tv' ? 'shows' : 'movies';
+    if (flixIsLoading) {
+      flixResultCount.textContent = 'Loading ' + label + '…';
+      flixLoadMore.disabled = true;
+    } else {
+      flixResultCount.textContent = 'Showing ' + flixMovies.length + ' ' + label + (flixTotalResults ? ' · ' + flixTotalResults.toLocaleString() + ' listed' : '');
+      flixLoadMore.disabled = false;
+    }
+    flixLoadMore.hidden = flixIsLoading || flixPage >= flixTotalPages;
+    if (flixPage >= flixTotalPages) flixResultCount.textContent += ' · end of results';
+    flixLoadMore.textContent = flixIsLoading ? 'Loading…' : 'Load more';
+  }
+  function loadFlixMovies(page, append) {
+    if (flixIsLoading && append) return;
+    page = page || 1;
+    append = !!append;
+    var requestId = ++flixRequestId;
+    var query = flixSearch.value.trim();
+    var endpoint = query ? 'search/' + flixType : flixCategory.value;
+    var url = 'https://api.themoviedb.org/3/' + endpoint + '?api_key=' + encodeURIComponent(TMDB_KEY) + '&language=en-US&page=' + page;
+    if (query) url += '&include_adult=false&query=' + encodeURIComponent(query);
+    flixIsLoading = true;
+    flixLoadMore.hidden = true;
+    if (!flixGrid.children.length) flixGrid.textContent = 'Loading ' + (flixType === 'tv' ? 'shows' : 'movies') + '…';
+    updateFlixPaging();
+    fetch(url).then(function (response) {
+      if (!response.ok) throw new Error('Catalog request failed (' + response.status + ').');
+      return response.json();
+    }).then(function (data) {
+      if (requestId !== flixRequestId) return;
+      if (!append) { flixPage = 0; flixMovies = []; }
+      flixSelected = append ? flixSelected : null;
+      flixTotalResults = data.total_results || 0;
+      flixTotalPages = Math.max(1, Math.min(data.total_pages || 1, 500));
+      flixPage = page;
+      renderFlixCards(data.results || [], append);
+      flixIsLoading = false;
+      updateFlixPaging();
+    }).catch(function () {
+      if (requestId !== flixRequestId) return;
+      flixIsLoading = false;
+      if (flixType === 'movie' && !query && page === 1 && flixCategory.value === 'discover/movie') {
+        flixSelected = null;
+        flixPage = 1;
+        flixTotalPages = 1;
+        flixTotalResults = flixMovieSeed.length;
+        renderFlixCards(flixMovieSeed, false);
+      } else if (!append) {
+        flixGrid.textContent = 'Could not load titles. Check your internet connection and try again.';
+        flixTotalPages = 1;
+        renderFlixDetail(null);
+      }
+      updateFlixPaging();
+    });
+  }
+  $('#tile-silentflix').addEventListener('click', function () {
+    if (!flixLoaded) { flixLoaded = true; renderFlixCards(flixMovieSeed, false); loadFlixMovies(1, false); }
+  });
+  function setFlixType(type) {
+    flixType = type;
+    var shows = type === 'tv';
+    $('#flix-movies-tab').setAttribute('aria-selected', String(!shows));
+    $('#flix-shows-tab').setAttribute('aria-selected', String(shows));
+    flixSearch.placeholder = shows ? 'Search shows' : 'Search movies';
+    flixCategory.innerHTML = shows
+      ? '<option value="discover/tv">All shows</option><option value="trending/tv/week">Trending this week</option><option value="tv/popular">Popular</option><option value="tv/top_rated">Top rated</option><option value="tv/on_the_air">Currently airing</option>'
+      : '<option value="discover/movie">All movies</option><option value="trending/movie/week">Trending this week</option><option value="movie/popular">Popular</option><option value="movie/top_rated">Top rated</option><option value="movie/upcoming">Upcoming</option>';
+    flixSearch.value = '';
+    flixSelected = null;
+    flixPage = 0;
+    flixTotalPages = 1;
+    flixMovies = [];
+    flixLoadMore.hidden = true;
+    if (flixLoaded) loadFlixMovies(1, false);
+  }
+  $('#flix-movies-tab').addEventListener('click', function () { setFlixType('movie'); });
+  $('#flix-shows-tab').addEventListener('click', function () { setFlixType('tv'); });
+  flixCategory.addEventListener('change', function () { flixSelected = null; loadFlixMovies(1, false); });
+  flixLoadMore.addEventListener('click', function () { if (flixPage < flixTotalPages) loadFlixMovies(flixPage + 1, true); });
+  flixSearch.addEventListener('input', function () {
+    clearTimeout(flixSearchTimer);
+    flixSearchTimer = setTimeout(function () { flixSelected = null; loadFlixMovies(1, false); }, 350);
+  });
+  var gameCatalog = [
+    ['Bowmasters', 'study2/0.html', 'images/covers/0.webp'],
+    ['OvO', 'study2/1-fde.html', 'images/covers/1.webp'],
+    ['OvO 2', 'study2/2e.html', 'images/covers/2.webp'],
+    ['OvO 3 Dimensions', 'study2/3-f.html', 'images/covers/3.webp'],
+    ['Gladihoppers', 'study2/4-pf.html', 'images/covers/4.webp'],
+    ['Ice Dodo', 'study2/5-f.html', 'images/covers/5.webp'],
+    ['Block Blast', 'study2/6-f.html', 'images/covers/6.webp'],
+    ['Velocity Rush', 'study/velocity-rush/index.html', 'images/thumbnails/velocity-rush.png'],
+    ['Jetpack Joyride', 'study2/7-f.html', 'images/covers/7.webp'],
+    ['Friday Night Funkin', 'study2/8-wow2.html', 'images/covers/8.webp'],
+    ['Sprunki', 'study2/9-f.html', 'images/covers/9.webp'],
+    ['Temple Run 2', 'study2/10-f.html', 'images/covers/10.webp'],
+    ['Stickman Hook', 'study2/11-f.html', 'images/covers/11.webp'],
+    ['Attack Hole', 'study2/13.html', 'images/covers/13.webp'],
+    ['Bridge Race', 'study2/14.html', 'images/covers/14.webp'],
+    ['Color Water Sort 3D', 'study2/15.html', 'images/covers/15.webp'],
+    ['Hide N Seek', 'study2/16.html', 'images/covers/16.webp'],
+    ['Magic Tiles 3', 'study2/17.html', 'images/covers/17.webp'],
+    ['Stacky Dash', 'study2/18.html', 'images/covers/18.webp'],
+    ['Supreme Duelist', 'study2/19.html', 'images/covers/19.webp'],
+    ['Tall Man Run', 'study2/20a.html', 'images/covers/20.webp'],
+    ['Turbo Stars', 'study2/21.html', 'images/covers/21.webp'],
+    ['Mob Control', 'study2/22.html', 'images/covers/22.webp'],
+    ['Pou', 'study2/23.html', 'images/covers/23.webp'],
+    ['Crossy Road', 'study2/24.html', 'images/covers/24.webp'],
+    ['Basket Battle', 'study2/25.html', 'images/covers/25.webp'],
+    ['Amaze', 'study2/26.html', 'images/covers/26.webp'],
+    ['Geometry Dash Lite (REMAKE)', 'study2/27-f.html', 'images/covers/27.webp'],
+    ['Basketball FRVR', 'study2/28.html', 'images/covers/28.webp'],
+    ['Bazooka Boy', 'study2/29.html', 'images/covers/29.webp'],
+    ['Bottle Jump 3D', 'study2/30.html', 'images/covers/30.webp'],
+    ['Color Match', 'study2/31.html', 'images/covers/31.webp'],
+    ['Dig Deep', 'study2/32.html', 'images/covers/32.webp'],
+    ['Retro Bowl', 'study2/33-ff.html', 'images/covers/33.webp'],
+    ['Retro Bowl College', 'study2/34-fixed.html', 'images/covers/34.webp'],
+    ['Monster Tracks', 'study2/36-f.html', 'images/covers/36.webp'],
+    ['Gobble', 'study2/37-f.html', 'images/covers/37.webp'],
+    ['Five Nights at Freddy’s', 'study2/38-f.html', 'images/covers/38.webp'],
+    ['Five Nights at Freddy’s 2', 'study2/39-f.html', 'images/covers/39.webp'],
+    ['Five Nights at Freddy’s 3', 'study2/40-f.html', 'images/covers/40.webp'],
+    ['Five Nights at Freddy’s 4', 'study2/41-f.html', 'images/covers/41.webp'],
+    ['Road of Fury', 'study2/42-f.html', 'images/covers/42.webp'],
+    ['Driven Wild', 'study2/43-f.html', 'images/covers/43.webp'],
+    ['Ragdoll Hit', 'study2/44-fix.html', 'images/covers/44.webp'],
+    ['Vex 1', 'study2/45-f.html', 'images/covers/45.webp'],
+    ['Vex 2', 'study2/46-f.html', 'images/covers/46.webp'],
+    ['Vex 3', 'study2/47-f.html', 'images/covers/47.webp'],
+    ['Vex 3 XMAS', 'study2/48-f.html', 'images/covers/48.webp'],
+    ['Vex 4', 'study2/49-f.html', 'images/covers/49.webp'],
+    ['Vex 5', 'study2/50-f.html', 'images/covers/50.webp'],
+    ['Vex 6', 'study2/51-f.html', 'images/covers/51.webp'],
+    ['Vex 7', 'study2/52-f.html', 'images/covers/52.webp'],
+    ['Vex 8', 'study2/53-f.html', 'images/covers/53.webp'],
+    ['Vex Challenges', 'study2/54-f.html', 'images/covers/54.webp'],
+    ['Vex X3M', 'study2/55-f.html', 'images/covers/55.webp'],
+    ['Vex X3M 2', 'study2/56-f.html', 'images/covers/56.webp'],
+    ['1v1.LoL', 'study2/58.html', 'images/covers/58.webp'],
+    ['A Dance of Fire and Ice', 'study2/59.html', 'images/covers/59.webp'],
+    ['Achievement Unlocked', 'study2/60.html', 'images/covers/60.webp'],
+    ['Achievement Unlocked 2', 'study2/61.html', 'images/covers/61.webp'],
+    ['Achievement Unlocked 3', 'study2/62.html', 'images/covers/62.webp'],
+    ['Angry Birds', 'study2/63.html', 'images/covers/63.webp'],
+    ['Backrooms', 'study2/64-fix2.html', 'images/covers/64.webp'],
+    ['Baldi’s Basics', 'study2/65-fixed.html', 'images/covers/65.webp'],
+    ['Basket Random', 'study2/66.html', 'images/covers/66.webp'],
+    ['Big Tower Tiny Square', 'study2/67-f.html', 'images/covers/67.webp'],
+    ['Big NEON Tower Tiny Square', 'study2/68.html', 'images/covers/68.webp'],
+    ['Big ICE Tower Tiny Square', 'study2/69.html', 'images/covers/69.webp'],
+    ['BitLife', 'study2/70.html', 'images/covers/70.webp'],
+    ['Bloons TD', 'study2/71.html', 'images/covers/71.webp'],
+    ['Bloons TD 2', 'study2/72.html', 'images/covers/72.webp'],
+    ['Bloons TD 3', 'study2/73.html', 'images/covers/73.webp'],
+    ['Bloons TD 4', 'study2/74.html', 'images/covers/74.webp'],
+    ['Bloons TD 5', 'study2/75-fix2.html', 'images/covers/75.webp'],
+    ['Bob The Robber 2', 'study2/76-fix2.html', 'images/covers/76.webp'],
+    ['Boxing Random', 'study2/77.html', 'images/covers/77.webp'],
+    ['Burrito Bison: Launcha Libre', 'study2/78.html', 'images/covers/78.webp'],
+    ['Cannon Basketball', 'study2/79.html', 'images/covers/79.webp'],
+    ['Cannon Basketball 2', 'study2/80.html', 'images/covers/80.webp'],
+    ['Cluster Rush', 'study2/81.html', 'images/covers/81.webp'],
+    ['Cookie Clicker', 'study2/82-a.html', 'images/covers/82.webp'],
+    ['Coreball', 'study2/83-f.html', 'images/covers/83.webp'],
+    ['Cubefield', 'study2/84.html', 'images/covers/84.webp'],
+    ['Cut the Rope', 'study2/85-f2.html', 'images/covers/85.webp'],
+    ['Draw Climber', 'study2/86.html', 'images/covers/86.webp'],
+    ['Emulator.JS', 'study2/87-f.html', 'images/covers/87.webp'],
+    ['Fireboy and Watergirl 2', 'study2/88.html', 'images/covers/88.webp'],
+    ['Fireboy and Watergirl 3', 'study2/89.html', 'images/covers/89.webp'],
+    ['Granny', 'study2/90-fix2.html', 'images/covers/90.webp'],
+    ['Gunspin', 'study2/91.html', 'images/covers/91.webp'],
+    ['Highway Racer 2', 'study2/92.html', 'images/covers/92.webp'],
+    ['Johnny Trigger', 'study2/93.html', 'images/covers/93.webp'],
+    ['Journey Downhill', 'study2/94.html', 'images/covers/94.webp'],
+    ['Line Rider', 'study2/95.html', 'images/covers/95.webp'],
+    ['Moto X3M', 'study2/96.html', 'images/covers/96.webp'],
+    ['Moto X3M 2', 'study2/97.html', 'images/covers/97.webp'],
+    ['Moto X3M 3', 'study2/98.html', 'images/covers/98.webp'],
+    ['Moto X3M Spooky', 'study2/99.html', 'images/covers/99.webp'],
+    ['Moto X3M Winter', 'study2/100-f.html', 'images/covers/100.webp'],
+    ['Ninja vs EvilCorp', 'study2/101.html', 'images/covers/101.webp'],
+    ['Paper.io 2', 'study2/102.html', 'images/covers/102.webp'],
+    ['The World’s Hardest Game', 'study2/103.html', 'images/covers/103.webp'],
+    ['The World’s Hardest Game 3', 'study2/104.html', 'images/covers/104.webp'],
+    ['The World’s Hardest Game 4', 'study2/105.html', 'images/covers/105.webp'],
+    ['This Is The Only Level', 'study2/106.html', 'images/covers/106.webp'],
+    ['This Is The Only Level 2', 'study2/107.html', 'images/covers/107.webp'],
+    ['Tiny Fishing', 'study2/108.html', 'images/covers/108.webp'],
+    ['Tomb Of The Mask', 'study2/109.html', 'images/covers/109.webp'],
+    ['Toss The Turtle', 'study2/110-f.html', 'images/covers/110.webp'],
+    ['Tube Jumpers', 'study2/111.html', 'images/covers/111.webp'],
+    ['Wordle', 'study2/112-fix2.html', 'images/covers/112.webp'],
+    ['Ruffle', 'study2/113.html', 'images/covers/113.webp'],
+    ['2048', 'study2/114.html', 'images/covers/114.webp'],
+    ['8 Ball Pool', 'study2/115.html', 'images/covers/115.webp'],
+    ['Offroad Mountain Bike', 'study2/116.html', 'images/covers/116.webp'],
+    ['Space Waves', 'study2/117-fixf.html', 'images/covers/117.webp'],
+    ['Solar Smash', 'study2/118.html', 'images/covers/118.webp'],
+    ['Snow Rider 3D', 'study2/119.html', 'images/covers/119.webp'],
+    ['Fortzone Battle Royale', 'study2/120-f.html', 'images/covers/120.webp'],
+    ['Brawl Guys.io', 'study2/121.html', 'images/covers/121.webp'],
+    ['Survival Race', 'study2/122.html', 'images/covers/122.webp'],
+    ['Poly Track', 'study2/123-win2.html', 'images/covers/123.webp'],
+    ['Moto X3M Pool Party', 'study2/124.html', 'images/covers/124.webp'],
+    ['Granny 2', 'study2/125.html', 'images/covers/125.webp'],
+    ['Granny 3', 'study2/126.html', 'images/covers/126.webp'],
+    ['Fashion Battle', 'study2/127.html', 'images/covers/127.webp'],
+    ['Slice It All', 'study2/128.html', 'images/covers/128.webp'],
+    ['Flappy Bird', 'study2/129.html', 'images/covers/129.webp'],
+    ['osu!', 'study2/130-f.html', 'images/covers/130.webp'],
+    ['8 Ball Classic', 'study2/146.html', 'images/covers/146.webp'],
+    ['Angry Birds Showdown', 'study2/147.html', 'images/covers/147.webp'],
+    ['Archery World Tour', 'study2/148.html', 'images/covers/148.webp'],
+    ['Ball Blast', 'study2/149.html', 'images/covers/149.webp'],
+    ['Cannon Balls 3D', 'study2/150.html', 'images/covers/150.webp'],
+    ['Chess Classic', 'study2/151.html', 'images/covers/151.webp'],
+    ['Draw the Line', 'study2/152.html', 'images/covers/152.webp'],
+    ['Flappy Dunk', 'study2/153.html', 'images/covers/153.webp'],
+    ['Fork n Sausage', 'study2/154.html', 'images/covers/154.webp'],
+    ['Guess Their Answer', 'study2/155.html', 'images/covers/155.webp'],
+    ['Harvest.io', 'study2/156.html', 'images/covers/156.webp'],
+    ['Hill Climb Racing Lite', 'study2/157.html', 'images/covers/157.webp'],
+    ['Pac-Man Superfast', 'study2/158.html', 'images/covers/158.webp'],
+    ['Parking Rush', 'study2/159.html', 'images/covers/159.webp'],
+    ['Race Master 3D', 'study2/160.html', 'images/covers/160.webp'],
+    ['State.io', 'study2/161.html', 'images/covers/161.webp'],
+    ['Tower Crash 3D', 'study2/162.html', 'images/covers/162.webp'],
+    ['Trivia Crack', 'study2/163.html', 'images/covers/163.webp'],
+    ['Crazy Cattle 3D', 'study2/164-temp2.html', 'images/covers/164.webp'],
+    ['Cheese Chompers 3D', 'study2/165.html', 'images/covers/165.webp'],
+    ['Bad Parenting 1', 'study2/166-f.html', 'images/covers/166.webp'],
+    ['Blade Ball', 'study2/167.html', 'images/covers/167.webp'],
+    ['Blocky Snakes', 'study2/168.html', 'images/covers/168.webp'],
+    ['Bloxorz', 'study2/169.html', 'images/covers/169.webp'],
+    ['Big Tower Tiny Square 2', 'study2/170.html', 'images/covers/170.webp'],
+    ['Candy Crush', 'study2/171.html', 'images/covers/171.webp'],
+    ['Melon Playground', 'study2/172-f.html', 'images/covers/172.webp'],
+    ['Drift Hunters', 'study2/173.html', 'images/covers/173.webp'],
+    ['World Box', 'study2/174.html', 'images/covers/174.webp'],
+    ['Run 1', 'study2/175.html', 'images/covers/175.webp'],
+    ['Run 2', 'study2/176.html', 'images/covers/176.webp'],
+    ['Run 3', 'study2/177.html', 'images/covers/177.webp'],
+    ['Swords and Souls', 'study2/178.html', 'images/covers/178.webp'],
+    ['Soundboard', 'study2/179-a2.html', 'images/covers/179.webp'],
+    ['n-gon', 'study2/180.html', 'images/covers/180.webp'],
+    ['Minecraft 1.8.8', 'study2/181-f.html', 'images/covers/181.webp'],
+    ['Minecraft 1.12.2', 'study2/182-f.html', 'images/covers/182.webp'],
+    ['Minecraft 1.21.4', 'study2/183.html', 'images/covers/183.webp'],
+    ['Five Nights at Freddy’s: Sister Location', 'study2/185-f.html', 'images/covers/185.webp'],
+    ['Ragdoll Archers', 'study2/186.html', 'images/covers/186.webp'],
+    ['Papers, Please', 'study2/187.html', 'images/covers/187.webp'],
+    ['Scrap Metal 3', 'study2/188e.html', 'images/covers/188.webp'],
+    ['Five Nights at Freddy’s: World', 'study2/190-f.html', 'images/covers/190.webp'],
+    ['Five Nights at Freddy’s: Pizza Simulator', 'study2/191-f.html', 'images/covers/191.webp'],
+    ['Five Nights at Freddy’s: Ultimate Custom Night', 'study2/192-f.html', 'images/covers/192.webp'],
+    ['Do NOT Take This Cat Home', 'study2/193-f.html', 'images/covers/193.webp'],
+    ['People Playground', 'study2/194-a.html', 'images/covers/194-m.webp'],
+    ['R.E.P.O', 'study2/195-f.html', 'images/covers/195.webp'],
+    ['ULTRAKILL', 'study2/196-fixedf.html', 'images/covers/196.webp'],
+    ['Elastic Man', 'study2/197.html', 'images/covers/197.webp'],
+    ['Slope', 'study2/198.html', 'images/covers/198.webp'],
+    ['Time Shooter 1', 'study2/199.html', 'images/covers/199.webp'],
+    ['Time Shooter 2', 'study2/200.html', 'images/covers/200.webp'],
+    ['Time Shooter 3: SWAT', 'study2/201.html', 'images/covers/201.webp'],
+    ['Carrom Clash', 'study2/202.html', 'images/covers/202.webp'],
+    ['DOOM', 'study2/203-a.html', 'images/covers/203.webp'],
+    ['Five Nights at Winston’s', 'study2/204-a.html', 'images/covers/204.webp'],
+    ['Buckshot Roulette', 'study2/205-ff.html', 'images/covers/205.webp'],
+    ['Tunnel Rush', 'study2/206-f.html', 'images/covers/206.webp'],
+    ['Snowbattle.io', 'study2/207-f.html', 'images/covers/207.webp'],
+    ['Rolly Vortex', 'study2/208-f.html', 'images/covers/208.webp']
+  ];
+  var gamesGrid = $('#games-grid'), gamesSearch = $('#games-search'), gamesCount = $('#games-count');
+  var gamesCatalogView = $('#games-catalog'), gamesFrameView = $('#games-frame-view');
+  var gamesFrame = $('#games-frame'), gamesSelectedTitle = $('#games-selected-title');
+  function renderGameCatalog(query) {
+    var needle = (query || '').trim().toLowerCase();
+    var matches = gameCatalog.filter(function (game) { return game[0].toLowerCase().indexOf(needle) !== -1; });
+    gamesGrid.textContent = '';
+    matches.forEach(function (game) {
+        var card = document.createElement('button');
+        card.className = 'game-card';
+        card.type = 'button';
+        var image = document.createElement('img');
+        image.src = 'https://xylora.org/' + game[2];
+        image.alt = '';
+        image.loading = 'lazy';
+        var name = document.createElement('span');
+        name.textContent = game[0];
+        card.appendChild(image);
+        card.appendChild(name);
+        card.addEventListener('click', function () {
+          gamesSelectedTitle.textContent = game[0];
+          gamesFrame.title = game[0];
+          gamesFrame.src = 'https://xylora.org/' + game[1];
+          gamesCatalogView.hidden = true;
+          gamesFrameView.hidden = false;
+        });
+        gamesGrid.appendChild(card);
+      });
+    gamesCount.textContent = matches.length + ' games from Silent OS';
+  }
+  gamesSearch.addEventListener('input', function () { renderGameCatalog(gamesSearch.value); });
+  $('#games-back').addEventListener('click', function () {
+    gamesFrame.src = 'about:blank';
+    gamesFrameView.hidden = true;
+    gamesCatalogView.hidden = false;
+    gamesSearch.focus();
+  });
+  renderGameCatalog('');
+
+  window.addEventListener('resize', function () {
+    if ($('#desktop').hidden) return;
+    wins.forEach(function (w) {
+      if (w.el.hidden || w.max) return;
+      w.clamp();
+      w.apply();
+    });
+  });
+
+  function buildTasks() {
+    var wp = checked('wallpaper');
+    var tasks = [
+      { label: 'Loading profile for ' + current, w: 1 },
+      { label: 'Applying ' + (checked('mode') === 'light' ? 'light' : 'dark') + ' mode', w: 1 },
+      { label: 'Loading wallpaper: ' + WP_NAMES[wp], w: WP_WEIGHT[wp] || 1 },
+      { label: 'Setting accent color', w: 1 }
+    ];
+    if (emailEl.value.trim()) tasks.push({ label: 'Loading emergency email', w: 1 });
+    if (phoneEl.value.trim()) tasks.push({ label: 'Loading emergency number', w: 1 });
+    tasks.push({ label: 'Starting desktop', w: 2 });
+    return tasks;
+  }
+
+  function updateClock() {
+    $('#menu-time').textContent = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  }
+
+  function showDesktop() {
+    $('#desktop').setAttribute('data-wp', checked('wallpaper'));
+    $('#menu-user').textContent = current;
+    browserWin.reset('closed');
+    gamesWin.reset('closed');
+    settingsWin.reset('closed');
+    settingsMode.value = checked('mode');
+    settingsWallpaper.value = checked('wallpaper');
+    settingsAccent.value = checked('accent') || customEl.value;
+    updateClock();
+    clearInterval(clockTimer);
+    clockTimer = setInterval(updateClock, 20000);
+    $('#boot').hidden = true;
+    $('#desktop').hidden = false;
+    $('#tile-settings').focus();
+  }
+
+  function runBoot() {
+    var tasks = buildTasks(), total = 0;
+    tasks.forEach(function (t) { t.ms = t.w * MS_PER_UNIT; total += t.ms; });
+    var taskTotal = total;
+    total += 300;
+    var fill = $('#bar-fill'), pct = $('#boot-pct'), label = $('#boot-label'), bar = $('#bar');
+    var start = performance.now();
+
+    function frame(now) {
+      var el = Math.min(now - start, total), acc = 0, prog = 1, cur = tasks[tasks.length - 1];
+      for (var i = 0; i < tasks.length; i++) {
+        if (el < acc + tasks[i].ms) {
+          var local = (el - acc) / tasks[i].ms;
+          var eased = local * local * (3 - 2 * local);
+          prog = (acc + tasks[i].ms * eased) / taskTotal;
+          cur = tasks[i];
+          break;
+        }
+        acc += tasks[i].ms;
+      }
+      fill.style.transform = 'scaleX(' + prog + ')';
+      pct.textContent = Math.round(prog * 100) + '%';
+      bar.setAttribute('aria-valuenow', String(Math.round(prog * 100)));
+      label.textContent = cur.label + '…';
+      if (el < total) { requestAnimationFrame(frame); }
+      else {
+        fill.style.transform = 'scaleX(1)';
+        pct.textContent = '100%';
+        label.textContent = 'Ready';
+        setTimeout(showDesktop, 250);
+      }
+    }
+    requestAnimationFrame(frame);
+  }
+
+  $('#signin').addEventListener('click', function () {
+    $('#bar-fill').style.transform = 'scaleX(0)';
+    $('#boot-pct').textContent = '0%';
+    $('#boot-label').textContent = 'Starting up…';
+    $('#desktop').hidden = true;
+    $('#boot').hidden = false;
+    $('#os').hidden = false;
+    document.body.style.overflow = 'hidden';
+    runBoot();
+  });
+
+  document.querySelectorAll('.tile[data-app]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var t = $('#toast');
+      t.textContent = b.getAttribute('data-app') + " isn't built yet.";
+      t.hidden = false;
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(function () { t.hidden = true; }, 2200);
+    });
+  });
+
+  $('#edit').addEventListener('click', function () {
+    done.hidden = true;
+    form.hidden = false;
+    userEl.focus();
+  });
+  document.body.style.overflow = 'hidden';
+  runBoot();
+})();
+  runBoot();
+</script>
+
+</body></html>
