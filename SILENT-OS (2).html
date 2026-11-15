@@ -231,6 +231,10 @@
   .os-win.minecraft { width: min(100%, 1100px); height: min(100%, 760px); }
   .os-win-body.minecraft-body { display: flex; flex: 1; min-height: 0; padding: 0; overflow: hidden; }
   .minecraft-frame { flex: 1; min-height: 0; width: 100%; border: 0; background: #000; }
+  @media (max-width: 900px), (max-height: 640px) {
+    .os-win.minecraft { width: 100%; height: 100%; }
+    .os-win.minecraft .win-ctl button { width: 36px; height: 32px; }
+  }
   .os-win.silentflix { width: min(100%, 900px); height: min(100%, 680px); }
   .os-win.watch { width: min(100%, 1000px); height: min(100%, 700px); }
   .watch-body { display: flex; flex: 1; min-height: 0; flex-direction: column; padding: 0; background: #111; }
@@ -444,7 +448,7 @@
   <section class="desktop" id="desktop" aria-label="SILENT OS desktop">
     <header class="menubar">
       <span class="mb-left">SILENT OS <span class="mini-beta">Beta v0.9</span></span>
-      <span class="mb-right"><span id="menu-user">guest</span><span id="menu-time">11:46 PM</span></span>
+      <span class="mb-right"><span id="menu-user">guest</span><span id="menu-time">11:51 PM</span></span>
     </header>
     <div class="desk">
       <nav class="desk-icons" aria-label="Desktop icons">
@@ -458,7 +462,7 @@
         <strong>SILENT OS</strong>
         <span>enjoy your while.</span>
       </div>
-      <div class="os-win settings" id="win-settings" style="transform: translate(42px, 24px); z-index: 12;">
+      <div class="os-win settings" id="win-settings" style="transform: translate(42px, 24px); z-index: 14;">
         <div class="os-win-bar" tabindex="0" title="Drag to move. Arrow keys also work.">
           <span class="os-win-title">Settings</span>
           <span class="win-ctl">
@@ -575,7 +579,7 @@
           <span class="win-ctl">
             <button type="button" class="win-min" aria-label="Minimize window" title="Minimize"><svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M2 9h8" stroke="currentColor" stroke-width="2" fill="none"></path></svg></button>
             <button type="button" class="win-max" aria-label="Maximize window" title="Maximize"><svg class="i-max" viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><rect x="2" y="2" width="8" height="8" stroke="currentColor" stroke-width="2" fill="none"></rect></svg><svg class="i-res" viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M4 4V1.5h6.5V8H8M1.5 4H8v6.5H1.5z" stroke="currentColor" stroke-width="1.6" fill="none"></path></svg></button>
-            <button type="button" class="win-close" aria-label="Close window" title="Close"><svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M2 2l8 8M10 2L2 10" stroke="currentColor" stroke-width="2" fill="none"></path></svg></button>
+<button type="button" class="win-fullscreen" aria-label="Fullscreen game" title="Fullscreen"><svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M2 5V2h3M7 2h3v3M10 7v3H7M5 10H2V7" stroke="currentColor" stroke-width="1.6" fill="none"></path></svg></button>            <button type="button" class="win-close" aria-label="Close window" title="Close"><svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M2 2l8 8M10 2L2 10" stroke="currentColor" stroke-width="2" fill="none"></path></svg></button>
           </span>
         </div>
         <div class="os-win-body minecraft-body">
@@ -877,6 +881,14 @@ $('#tile-minecraft').addEventListener('click', function () {
     if (minecraftFrame.getAttribute('src') !== 'about:blank') minecraftFrame.focus();
   });
   $('#win-minecraft .win-close').addEventListener('click', function () { minecraftFrame.src = 'about:blank'; });
+$('#win-minecraft .win-fullscreen').addEventListener('click', function () {
+    try {
+      if (minecraftFrame.requestFullscreen) {
+        var fullscreenRequest = minecraftFrame.requestFullscreen();
+        if (fullscreenRequest && fullscreenRequest.catch) fullscreenRequest.catch(function () {});
+      }
+    } catch (error) {}
+  });
   var watchFrame = $('#watch-frame');
   var watchWindowTitle = $('#watch-window-title');
   var watchStatus = $('#watch-status');
